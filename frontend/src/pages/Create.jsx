@@ -1,0 +1,224 @@
+import React, { useState, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import api from '../api/axios';
+import { Camera, Loader2, Sparkles, Check, ChevronLeft, Zap, Target, X } from 'lucide-react';
+import { motion, AnimatePresence } from 'framer-motion';
+
+const Create = () => {
+  const navigate = useNavigate();
+  const fileInputRef = useRef(null);
+  
+  const [image, setImage] = useState(null);
+  const [preview, setPreview] = useState(null);
+  const [status, setStatus] = useState('idle'); // idle, analyzing, results, publishing
+  const [aiData, setAiData] = useState(null);
+  const [selectedPrice, setSelectedPrice] = useState(null);
+  const [loadingText, setLoadingText] = useState("EcoValue Agents analyzing...");
+
+  const loadingPhrases = [
+    "Identifying your item...",
+    "Checking market prices...",
+    "Drafting description...",
+    "Optimizing listing...",
+  ];
+
+  const handleTriggerCamera = () => {
+    fileInputRef.current?.click();
+  };
+
+  const handleImageChange = (e) => {
+    const file = e.target.files[0];
+    if (file) {
+      setImage(file);
+      setPreview(URL.createObjectURL(file));
+      handleAnalyze(file);
+    }
+  };
+
+  const handleAnalyze = async (file) => {
+    setStatus('analyzing');
+    
+    let phraseIndex = 0;
+    const interval = setInterval(() => {
+      phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
+      setLoadingText(loadingPhrases[phraseIndex]);
+    }, 1200);
+
+    const formData = new FormData();
+    formData.append('file', file);
+    
+    try {
+      const response = await api.post('/api/analyze', formData, {
+        headers: { 'Content-Type': 'multipart/form-data' }
+      });
+      setAiData(response.data);
+      setStatus('results');
+    } catch (error) {
+      console.error('Analysis failed:', error);
+      setStatus('idle');
+    } finally {
+      clearInterval(interval);
+    }
+  };
+
+  const handlePublish = async () => {
+    if (!selectedPrice) return;
+    setStatus('publishing');
+    
+    try {
+      await api.post('/api/listings', {
+        title: aiData.title,
+        description: aiData.description,
+        selected_price: selectedPrice,
+        image_url: image.name,
+      });
+      navigate('/');
+    } catch (error) {
+      console.error('Publishing failed:', error);
+      setStatus('results');
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-[#FAF9F6] pb-32">
+      <AnimatePresence>
+        {status === 'analyzing' && (
+          <motion.div 
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] bg-white/60 backdrop-blur-3xl flex flex-col items-center justify-center p-12 text-center"
+          >
+            <motion.div 
+              animate={{ 
+                scale: [1, 1.15, 1],
+                rotate: [0, 90, 180, 270, 360]
+              }}
+              transition={{ duration: 6, repeat: Infinity, ease: "linear" }}
+              className="w-40 h-40 bg-white rounded-[3rem] flex items-center justify-center shadow-2xl mb-12 border border-primary/5"
+            >
+              <div className="relative">
+                <div className="absolute -inset-8 bg-primary/10 rounded-full animate-ping" />
+                <Sparkles size={56} className="text-primary" fill="currentColor" />
+              </div>
+            </motion.div>
+            <h2 className="text-4xl font-black tracking-tighter text-foreground mb-6 h-10">{loadingText}</h2>
+            <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest opacity-60">EcoValue Intelligence Core</p>
+            
+            <div className="absolute bottom-20 left-12 right-12 flex gap-2">
+              {[1, 2, 3, 4, 5, 6].map(i => (
+                <motion.div 
+                  key={i}
+                  animate={{ opacity: [0.1, 1, 0.1], height: [4, 8, 4] }}
+                  transition={{ duration: 0.8, repeat: Infinity, delay: i * 0.1 }}
+                  className="w-full bg-primary rounded-full"
+                />
+              ))}
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      <div className="p-6">
+        <header className="flex justify-between items-center mb-10 mt-4">
+          <button onClick={() => navigate('/')} className="p-4 bg-white rounded-2xl shadow-sm border border-border/40 active:scale-90 transition-transform">
+            <ChevronLeft size={24} strokeWidth={3} />
+          </button>
+          <span className="font-black uppercase tracking-[0.2em] text-[10px] text-muted-foreground">AI Listing Flow</span>
+          <div className="w-14" />
+        </header>
+
+        {status === 'idle' && (
+          <div className="mt-12 text-center animate-in fade-in slide-in-from-bottom-8 duration-500">
+            <div className="w-24 h-24 bg-primary/10 rounded-[2rem] flex items-center justify-center mx-auto mb-8">
+              <Sparkles size={40} className="text-primary" fill="currentColor" />
+            </div>
+            <h2 className="text-5xl font-black tracking-tighter mb-4 leading-[0.9]">Turn photos<br/>into profit.</h2>
+            <p className="text-muted-foreground mb-16 font-bold uppercase tracking-widest text-[10px]">Zero effort. AI Powered.</p>
+            
+            <button 
+              onClick={handleTriggerCamera}
+              className="w-full aspect-[4/5] border-2 border-dashed border-primary/30 rounded-[4rem] flex flex-col items-center justify-center group active:scale-[0.98] transition-all bg-white shadow-xl shadow-black/5 hover:bg-primary/5"
+            >
+              <div className="w-28 h-28 bg-primary text-white rounded-full flex items-center justify-center mb-8 shadow-2xl shadow-primary/40 group-hover:scale-110 transition-transform">
+                <Camera size={48} strokeWidth={2.5} />
+              </div>
+              <span className="text-2xl font-black tracking-tighter">Snap Item Photo</span>
+              <span className="text-muted-foreground font-bold uppercase tracking-widest text-[9px] mt-2">Environment Camera</span>
+            </button>
+            <input 
+              type="file" 
+              ref={fileInputRef}
+              className="hidden" 
+              onChange={handleImageChange} 
+              accept="image/*" 
+              capture="environment" 
+            />
+          </div>
+        )}
+
+        {status === 'results' && aiData && (
+          <div className="space-y-10 animate-in fade-in slide-in-from-bottom-12 duration-700">
+            <div className="relative rounded-[4rem] overflow-hidden aspect-[4/5] shadow-2xl border-4 border-white premium-shadow">
+              <img src={preview} alt="Preview" className="w-full h-full object-cover" />
+              <div className="absolute inset-x-0 bottom-0 h-32 bg-gradient-to-t from-black/60 to-transparent" />
+              <div className="absolute bottom-8 left-8 bg-primary/95 text-white px-5 py-3 rounded-2xl flex items-center gap-3 font-black text-xs uppercase tracking-widest backdrop-blur-xl shadow-2xl">
+                <Sparkles size={16} fill="currentColor" /> AI Analyzed
+              </div>
+            </div>
+
+            <div className="bg-white p-10 rounded-[3.5rem] premium-shadow border border-border/30">
+              <div className="flex items-center gap-2 text-primary mb-5 opacity-40">
+                <Zap size={14} fill="currentColor" />
+                <span className="text-[10px] font-black uppercase tracking-[0.3em]">Smart Suggestion</span>
+              </div>
+              <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">{aiData.title}</h3>
+              <p className="text-muted-foreground font-medium leading-relaxed mb-10 text-lg">{aiData.description}</p>
+              
+              <div className="grid grid-cols-2 gap-5">
+                <button 
+                  onClick={() => setSelectedPrice(aiData.quick_price)}
+                  className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${selectedPrice === aiData.quick_price ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
+                >
+                  <Zap size={24} className={selectedPrice === aiData.quick_price ? 'text-primary' : 'text-muted-foreground/40'} fill={selectedPrice === aiData.quick_price ? 'currentColor' : 'none'} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em] mt-6 mb-2">Quick Sell</span>
+                  <span className="text-3xl font-black tracking-tighter">₺{aiData.quick_price}</span>
+                  {selectedPrice === aiData.quick_price && (
+                    <motion.div layoutId="check" className="absolute top-4 right-4 bg-primary text-white p-1.5 rounded-full shadow-lg">
+                      <Check size={14} strokeWidth={4} />
+                    </motion.div>
+                  )}
+                </button>
+                
+                <button 
+                  onClick={() => setSelectedPrice(aiData.ideal_price)}
+                  className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${selectedPrice === aiData.ideal_price ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
+                >
+                  <Target size={24} className={selectedPrice === aiData.ideal_price ? 'text-primary' : 'text-muted-foreground/40'} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em] mt-6 mb-2">Ideal Value</span>
+                  <span className="text-3xl font-black tracking-tighter">₺{aiData.ideal_price}</span>
+                  {selectedPrice === aiData.ideal_price && (
+                    <motion.div layoutId="check" className="absolute top-4 right-4 bg-primary text-white p-1.5 rounded-full shadow-lg">
+                      <Check size={14} strokeWidth={4} />
+                    </motion.div>
+                  )}
+                </button>
+              </div>
+            </div>
+
+            <button 
+              onClick={handlePublish}
+              disabled={!selectedPrice || status === 'publishing'}
+              className="w-full bg-primary text-white py-8 rounded-[2.5rem] font-black text-2xl shadow-2xl shadow-primary/40 active:scale-[0.95] transition-all disabled:opacity-30 flex items-center justify-center gap-4 border-b-8 border-black/10"
+            >
+              {status === 'publishing' ? <Loader2 className="animate-spin" /> : <Sparkles size={28} fill="currentColor" />}
+              {status === 'publishing' ? 'PUBLISHING...' : 'CONFIRM & LIST'}
+            </button>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+};
+
+export default Create;
