@@ -1,63 +1,123 @@
-# EcoValue Marketplace - Project Requirements
+# Agentic Second-Hand Marketplace Requirements
 
-## 1. Overview
-EcoValue Marketplace is an AI-powered, mobile-first web application designed to make selling second-hand items "zero-effort." By leveraging AI agents, the app automates the listing process, from image recognition and description generation to market price estimation.
+## 1. Product Goal
+
+Build marketplace shell for second-hand goods with AI-assisted listing creation.
+User should be able to turn one photo and minimal input into a publishable listing in one flow.
 
 ## 2. Functional Requirements
-### 2.1 User Flow: The "Magic" Listing
-1. **Camera Trigger**: Users click a prominent "AI Hızlı Sat" button.
-2. **Native Camera Access**: Opens the mobile camera (or file picker on desktop) with `capture="environment"`.
-3. **AI Analysis**: 
-    - Uploads the image to the FastAPI backend.
-    - Simulates/performs AI analysis (title, description, price points).
-    - UI shows a "processing" state with dynamic, engaging feedback.
-4. **AI-Assisted Form**:
-    - Displays AI-generated title and description.
-    - Provides two price options: "Quick Sell" (Low) and "Ideal Price" (Market value).
-5. **Publishing**: User selects a price and clicks "Publish." The item is added to the marketplace database and appears on the feed instantly.
 
-### 2.2 Marketplace Feed
-- Display a feed of listings with high-quality images and clear pricing.
-- Mobile-first layout (constrained width on desktop).
-- Real-time updates (via state management after publishing).
+### 2.1 Listing Intake
+
+- User can start sell flow from prominent CTA.
+- User can upload from camera or gallery.
+- System accepts one or more images.
+- System creates analysis job immediately.
+
+### 2.2 Agentic Draft
+
+- AI returns draft title.
+- AI returns draft description.
+- AI returns quick-sell price.
+- AI returns market price.
+- UI lets user edit draft before publish.
+- System blocks publish until user confirms final version.
+
+### 2.3 Publish Flow
+
+- User can publish approved draft.
+- Published listing appears in feed without manual refresh.
+- Listing keeps original images and final selected price.
+
+### 2.4 Marketplace Feed
+
+- Feed shows newest and promoted listings.
+- Feed supports image-first card layout.
+- Search and category filtering are part of marketplace shell.
+
+### 2.5 Messaging
+
+- Buyer can start conversation from listing.
+- Seller can reply in chat.
+- Messages persist in backend.
+- Conversation is tied to listing and user identities.
+
+### 2.6 Account
+
+- User can sign up and log in.
+- User can manage profile.
+- User can see own listings and drafts.
 
 ## 3. Non-Functional Requirements
-- **Mobile-First Design**: Optimized for vertical screens, touch interactions, and PWA feel.
-- **Premium Aesthetics**: High-end minimalist design with smooth animations.
-- **Performance**: Near-instant feedback (loaders, skeleton screens).
-- **Scalability**: Backend structured to handle modular AI agents (LangGraph).
 
-## 4. Technical Architecture
-### 4.1 Frontend (React + Vite)
-- **Styling**: Tailwind CSS + Shadcn UI.
-- **Animations**: Framer Motion for AI states and transitions.
-- **State Management**: React Context/Hooks for local UI and AI data flow.
-- **API Communication**: Axios instance pointing to the FastAPI backend.
+- Mobile first UI.
+- Fast first response for upload and draft generation.
+- AI flow tolerant of model latency.
+- Clear loading, error, and retry states.
+- Safe storage for images and user content.
+- Ready for later scale-up from SQLite to Postgres.
 
-### 4.2 Backend (FastAPI + SQLite)
-- **REST API**: Handles listings and image processing.
-- **Storage**: Local SQLite for data and `/static/images` for file storage.
-- **AI Integration**: Mocked endpoint for the 7-day hackathon, ready for LangGraph module integration.
+## 4. Infrastructure Requirements
 
-## 5. UI/UX Design System
-### 5.1 Color Palette
-- **Background**: `#FAF9F6` (Soft Cream/Off-white) - for a warm, premium feel.
-- **Primary (AI)**: `#6366F1` (Indigo/Soft Purple) - represents intelligence and tech.
-- **Secondary (Earth)**: `#A855F7` (Secondary Purple) and Terracotta/Browns for natural, sustainable vibes.
-- **Text**: `#1F2937` (Rich Charcoal) for high legibility.
+### 4.1 Frontend
 
-### 5.2 Typography
-- **Headings**: *Inter* or *Outfit*, Semibold/Bold, large scale.
-- **Body**: *Inter*, Regular, clean tracking and leading.
+- React route shell.
+- Auth screens.
+- Feed screen.
+- Sell flow screen.
+- Messages screen.
+- Profile screen.
 
-### 5.3 UI Components
-- **Buttons**: Large, rounded corners (`rounded-2xl`), subtle shadows.
-- **Cards**: Minimal borders, soft shadows, plenty of internal padding.
-- **Loading Overlay**: Translucent backdrop with smooth motion-blurred elements.
+### 4.2 Backend
 
-## 6. Implementation Roadmap
-1. **Foundation**: Setup design tokens in Tailwind and global styles.
-2. **Core Layout**: Create the mobile shell and Navbar.
-3. **Feed**: Implement the listing display.
-4. **The Camera Flow**: Build the "Magic" button and AI processing overlay.
-5. **Confirmation View**: Create the price selection and publish logic.
+- FastAPI REST API.
+- Separate upload and analysis endpoints.
+- Listing CRUD.
+- Message CRUD.
+- Health endpoint.
+- CORS config for frontend host.
+
+### 4.3 Data
+
+- Local development DB.
+- Production relational DB.
+- File/object storage for images.
+- Tables for drafts, listings, conversations, and AI jobs.
+
+### 4.4 AI
+
+- Vision analysis pipeline.
+- Pricing suggestion pipeline.
+- Copy generation pipeline.
+- Moderation pipeline.
+- Mock mode for dev and demo.
+
+## 5. MVP Phase Gates
+
+### Phase 0
+
+Repo baseline, app shell, config, docs, and local dev boot.
+
+### Phase 1
+
+Upload image, analyze draft, show price options, and create draft state.
+
+### Phase 2
+
+Publish listings, show feed, persist image metadata, and refresh listing list.
+
+### Phase 3
+
+Messaging, offers, trust signals, and profile management.
+
+### Phase 4
+
+Search ranking, moderation, observability, and production hardening.
+
+## 6. Acceptance Rules
+
+- No listing can publish without explicit user confirmation.
+- AI output must be editable before publish.
+- Published data must survive app reload.
+- Image upload path must not block feed browsing.
+- Docs must describe current stack and target stack separately.
