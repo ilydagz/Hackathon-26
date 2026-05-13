@@ -1,38 +1,22 @@
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&family=Manrope:wght@400;600;700&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   :root {
-    --background: 40 20% 97%; /* #FAF9F6 */
-    --foreground: 236 20% 29%; /* #3D405B */
-    --card: 0 0% 100%;
-    --card-foreground: 236 20% 29%;
-    --popover: 0 0% 100%;
-    --popover-foreground: 236 20% 29%;
-    --primary: 13 67% 62%; /* #E07A5F Terracotta */
-    --primary-foreground: 40 20% 97%;
-    --secondary: 10 26% 20%; /* #3E2723 Deep Brown */
-    --secondary-foreground: 40 20% 97%;
-    --muted: 40 20% 94%;
-    --muted-foreground: 236 10% 45%;
-    --accent: 13 67% 62%;
-    --accent-foreground: 40 20% 97%;
-    --destructive: 0 84.2% 60.2%;
-    --destructive-foreground: 210 40% 98%;
     --border: 236 20% 88%;
     --input: 236 20% 88%;
     --ring: 13 67% 62%;
-    --radius: 1.5rem;
+    --foreground: 236 20% 29%;
   }
-}
-
-@layer base {
   * {
-    @apply border-border;
+    @apply border-border-subtle;
   }
   body {
-    @apply bg-background text-foreground antialiased selection:bg-primary/20;
+    @apply bg-app-bg text-on-background antialiased;
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   h1, h2, h3, h4, h5, h6 {
@@ -46,4 +30,8 @@
 
 .nav-link.active {
   @apply text-primary;
+}
+
+.material-symbols-outlined {
+  font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
 }

@@ -1,13 +1,14 @@
 import React, { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Search, Send, Image as ImageIcon, Smile, MoreVertical, CheckCheck } from 'lucide-react';
+import { useLanguage } from '../context/LanguageContext';
 
 const Chat = () => {
+  const { t } = useLanguage();
   const [activeChat, setActiveChat] = useState(0);
   const [message, setMessage] = useState('');
 
   const contacts = [
-    { id: 0, name: 'Ahmet Yılmaz', lastMsg: 'Eşya hala duruyor mu?', time: '14:20', online: true, img: 'JD' },
+    { id: 0, name: 'Ahmet Yılmaz', lastMsg: 'Eşya hala duruyor mu?', time: '14:20', online: true, img: 'AY' },
     { id: 1, name: 'Ayşe Kaya', lastMsg: 'Fiyatta biraz yardımcı olabilir misiniz?', time: 'Dün', online: false, img: 'AK' },
     { id: 2, name: 'Mehmet Demir', lastMsg: 'Yarın gelip alabilirim.', time: 'Pzt', online: true, img: 'MD' },
   ];
@@ -20,39 +21,39 @@ const Chat = () => {
   ];
 
   return (
-    <div className="container mx-auto px-6 py-12 h-[calc(100vh-100px)] flex gap-10">
+    <div className="w-full px-margin-mobile md:px-margin-desktop py-lg h-[calc(100vh-80px)] flex gap-lg max-w-7xl mx-auto">
       {/* Sidebar - Contacts */}
-      <aside className="hidden lg:flex flex-col w-96 shrink-0 bg-white rounded-[3rem] shadow-2xl shadow-black/5 border border-border/20 overflow-hidden">
-        <div className="p-8 border-b border-border">
-          <h2 className="text-3xl font-black tracking-tighter text-secondary mb-6">Mesajlar</h2>
+      <aside className="hidden lg:flex flex-col w-96 shrink-0 bg-surface-card rounded-2xl shadow-sm border border-border-subtle overflow-hidden">
+        <div className="p-lg border-b border-border-subtle">
+          <h2 className="font-headline-md text-headline-md text-on-background mb-md">{t('chat.title')}</h2>
           <div className="relative group">
-            <Search className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground group-focus-within:text-primary transition-colors" size={18} />
+            <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant group-focus-within:text-primary transition-colors">search</span>
             <input 
               type="text" 
-              placeholder="Sohbet ara..."
-              className="w-full bg-muted/40 border-none rounded-2xl py-4 pl-12 pr-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium text-sm"
+              placeholder={t('chat.search')}
+              className="w-full bg-surface-muted border border-border-subtle rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 transition-all font-body-main text-body-main text-on-surface"
             />
           </div>
         </div>
-        <div className="flex-grow overflow-y-auto p-4 space-y-2">
+        <div className="flex-grow overflow-y-auto p-2 space-y-1">
           {contacts.map((contact) => (
             <button 
               key={contact.id}
               onClick={() => setActiveChat(contact.id)}
-              className={`w-full flex items-center gap-4 p-5 rounded-[2rem] transition-all ${activeChat === contact.id ? 'bg-primary/5 border border-primary/10 shadow-inner' : 'hover:bg-muted/50 border border-transparent'}`}
+              className={`w-full flex items-center gap-sm p-3 rounded-xl transition-all ${activeChat === contact.id ? 'bg-primary-container/10 border border-primary/20' : 'hover:bg-surface-muted border border-transparent'}`}
             >
-              <div className="relative">
-                <div className="w-14 h-14 rounded-2xl bg-muted flex items-center justify-center font-black text-secondary">
+              <div className="relative shrink-0">
+                <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center font-title-card text-title-card text-on-surface-variant">
                   {contact.img}
                 </div>
-                {contact.online && <div className="absolute -top-1 -right-1 w-4 h-4 bg-sage rounded-full border-4 border-white" />}
+                {contact.online && <div className="absolute -top-1 -right-1 w-3 h-3 bg-status-success rounded-full border-2 border-surface-card" />}
               </div>
               <div className="flex-grow text-left">
                 <div className="flex justify-between items-center mb-1">
-                  <h4 className="font-black text-secondary">{contact.name}</h4>
-                  <span className="text-[10px] font-bold text-muted-foreground">{contact.time}</span>
+                  <h4 className="font-title-card text-sm font-bold text-on-surface">{contact.name}</h4>
+                  <span className="text-[10px] font-bold text-text-secondary">{contact.time}</span>
                 </div>
-                <p className="text-xs text-muted-foreground line-clamp-1 font-medium">{contact.lastMsg}</p>
+                <p className="font-body-sm text-body-sm text-text-secondary line-clamp-1">{contact.lastMsg}</p>
               </div>
             </button>
           ))}
@@ -60,34 +61,34 @@ const Chat = () => {
       </aside>
 
       {/* Main Chat Area */}
-      <main className="flex-grow bg-white rounded-[3rem] shadow-2xl shadow-black/5 border border-border/20 flex flex-col overflow-hidden relative">
+      <main className="flex-grow bg-surface-card rounded-2xl shadow-sm border border-border-subtle flex flex-col overflow-hidden relative">
         {/* Chat Header */}
-        <header className="px-10 py-6 border-b border-border flex items-center justify-between bg-white/50 backdrop-blur-md">
-          <div className="flex items-center gap-5">
-            <div className="w-12 h-12 rounded-2xl bg-muted flex items-center justify-center font-black text-secondary">
+        <header className="px-lg py-4 border-b border-border-subtle flex items-center justify-between bg-surface-card/90 backdrop-blur-sm z-10">
+          <div className="flex items-center gap-sm">
+            <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center font-title-card text-title-card text-on-surface-variant">
               {contacts[activeChat].img}
             </div>
             <div>
-              <h3 className="font-black text-xl tracking-tight leading-none mb-1">{contacts[activeChat].name}</h3>
-              <p className="text-[10px] font-black uppercase tracking-widest text-sage">Çevrimiçi</p>
+              <h3 className="font-title-card text-title-card text-on-background leading-none mb-1">{contacts[activeChat].name}</h3>
+              <p className="font-label-caps text-label-caps text-status-success uppercase tracking-wider">{t('chat.online')}</p>
             </div>
           </div>
-          <button className="p-3 hover:bg-muted rounded-2xl transition-all">
-            <MoreVertical size={20} className="text-muted-foreground" />
+          <button className="p-2 hover:bg-surface-muted rounded-full transition-all text-on-surface-variant">
+            <span className="material-symbols-outlined text-[20px]">more_vert</span>
           </button>
         </header>
 
         {/* Messages */}
-        <div className="flex-grow overflow-y-auto p-10 space-y-8 bg-[#FAF9F6]/30">
+        <div className="flex-grow overflow-y-auto p-lg space-y-md bg-app-bg">
           {messages.map((msg) => (
             <div key={msg.id} className={`flex ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
               <div className={`max-w-[70%] group`}>
-                <div className={`p-6 rounded-[2rem] font-medium text-sm leading-relaxed shadow-sm ${msg.sender === 'me' ? 'bg-primary text-white rounded-tr-none shadow-primary/20' : 'bg-white text-secondary rounded-tl-none border border-border/40'}`}>
+                <div className={`p-4 rounded-xl font-body-main text-body-main shadow-sm ${msg.sender === 'me' ? 'bg-primary text-on-primary rounded-tr-sm' : 'bg-surface-card text-on-surface rounded-tl-sm border border-border-subtle'}`}>
                   {msg.text}
                 </div>
-                <div className={`flex items-center gap-2 mt-2 px-2 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
-                  <span className="text-[10px] font-bold text-muted-foreground/60 tracking-widest uppercase">{msg.time}</span>
-                  {msg.sender === 'me' && <CheckCheck size={12} className="text-primary" />}
+                <div className={`flex items-center gap-1 mt-1 px-1 ${msg.sender === 'me' ? 'justify-end' : 'justify-start'}`}>
+                  <span className="text-[10px] font-bold text-text-secondary tracking-wider uppercase">{msg.time}</span>
+                  {msg.sender === 'me' && <span className="material-symbols-outlined text-[14px] text-primary">done_all</span>}
                 </div>
               </div>
             </div>
@@ -95,23 +96,23 @@ const Chat = () => {
         </div>
 
         {/* Input Area */}
-        <div className="p-8 bg-white border-t border-border">
-          <div className="flex items-center gap-4 bg-muted/40 rounded-[2.5rem] p-3 pl-8 pr-3 border border-border/40 focus-within:ring-4 focus-within:ring-primary/10 transition-all">
-            <button className="text-muted-foreground hover:text-primary transition-colors">
-              <ImageIcon size={22} />
+        <div className="p-sm md:p-lg bg-surface-card border-t border-border-subtle">
+          <div className="flex items-center gap-2 bg-surface-muted rounded-xl p-2 pl-4 border border-border-subtle focus-within:border-primary transition-all">
+            <button className="text-on-surface-variant hover:text-primary transition-colors p-1">
+              <span className="material-symbols-outlined text-[24px]">image</span>
             </button>
-            <button className="text-muted-foreground hover:text-primary transition-colors">
-              <Smile size={22} />
+            <button className="text-on-surface-variant hover:text-primary transition-colors p-1">
+              <span className="material-symbols-outlined text-[24px]">sentiment_satisfied</span>
             </button>
             <input 
               type="text" 
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              placeholder="Bir mesaj yazın..."
-              className="flex-grow bg-transparent border-none focus:ring-0 font-medium py-3"
+              placeholder={t('chat.placeholder')}
+              className="flex-grow bg-transparent border-none focus:ring-0 font-body-main text-body-main text-on-surface py-2"
             />
-            <button className="bg-primary text-white p-4 rounded-2xl shadow-xl shadow-primary/20 hover:scale-105 active:scale-95 transition-all">
-              <Send size={22} />
+            <button className="bg-primary text-on-primary p-2 rounded-lg hover:scale-105 active:scale-95 transition-all shadow-sm">
+              <span className="material-symbols-outlined text-[24px]">send</span>
             </button>
           </div>
         </div>

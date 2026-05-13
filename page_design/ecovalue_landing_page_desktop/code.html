@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EcoValue - Pragmatic selling for everyone.</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700&amp;family=Manrope:wght@400;600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#5b403c",
+                        "inverse-surface": "#2b2e48",
+                        "status-success": "#81B29A",
+                        "surface-container": "#edecff",
+                        "on-primary-fixed": "#3c0800",
+                        "on-tertiary-fixed-variant": "#005144",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#19a992",
+                        "inverse-primary": "#ffb4a1",
+                        "tertiary-fixed": "#7df7dd",
+                        "surface-bright": "#fbf8ff",
+                        "on-primary-container": "#5b1604",
+                        "on-primary-fixed-variant": "#7c2e19",
+                        "status-error": "#E63946",
+                        "surface-container-low": "#f4f2ff",
+                        "outline-variant": "#dbc1ba",
+                        "surface-muted": "#F4F3F0",
+                        "on-surface-variant": "#55423e",
+                        "on-secondary-fixed": "#2b1613",
+                        "primary": "#9a442d",
+                        "on-tertiary-fixed": "#00201a",
+                        "on-tertiary": "#ffffff",
+                        "app-bg": "#FAF9F6",
+                        "primary-container": "#e07a5f",
+                        "surface": "#fbf8ff",
+                        "error": "#ba1a1a",
+                        "outline": "#88726d",
+                        "tertiary-fixed-dim": "#5edbc1",
+                        "on-tertiary-container": "#00362d",
+                        "surface-card": "#FFFFFF",
+                        "primary-fixed-dim": "#ffb4a1",
+                        "surface-dim": "#d6d8f9",
+                        "inverse-on-surface": "#f1efff",
+                        "text-secondary": "#6B7280",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffdbd2",
+                        "secondary-fixed-dim": "#e3beb8",
+                        "on-secondary-container": "#795c57",
+                        "surface-variant": "#dfe0ff",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#fbf8ff",
+                        "border-subtle": "#E2E8F0",
+                        "secondary-fixed": "#ffdad4",
+                        "text-main": "#3D405B",
+                        "surface-container-highest": "#dfe0ff",
+                        "surface-tint": "#9a442d",
+                        "secondary": "#745853",
+                        "tertiary": "#006b5b",
+                        "on-surface": "#161a32",
+                        "secondary-container": "#fed7d0",
+                        "on-background": "#161a32",
+                        "surface-container-high": "#e6e6ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "sm": "12px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Outfit", "sans-serif"],
+                        "display-lg-mobile": ["Outfit", "sans-serif"],
+                        "body-sm": ["Manrope", "sans-serif"],
+                        "label-caps": ["Manrope", "sans-serif"],
+                        "display-lg": ["Outfit", "sans-serif"],
+                        "title-card": ["Manrope", "sans-serif"],
+                        "body-main": ["Manrope", "sans-serif"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "title-card": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-main": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+</head>
+<body class="bg-app-bg text-on-background font-body-main antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- TopNavBar Component -->
+<header class="bg-app-bg border-b border-outline-variant docked full-width top-0 z-50">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-7xl mx-auto">
+<a class="font-headline-md text-headline-md font-bold text-primary flex items-center gap-xs" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
+                EcoValue
+            </a>
+<!-- Desktop Navigation -->
+<nav class="hidden md:flex items-center gap-lg font-body-main text-body-main">
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Browse</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">How it Works</a>
+<a class="text-on-surface-variant hover:text-primary transition-colors duration-200" href="#">Trust</a>
+<a class="text-primary border-b-2 border-primary pb-1 font-bold" href="#">Sell</a>
+</nav>
+<div class="flex items-center gap-md">
+<a class="font-body-main text-body-main text-primary hover:text-primary-fixed-dim transition-colors duration-200 hidden md:inline-block" href="#">Sign In</a>
+<a class="bg-primary text-on-primary px-lg py-sm rounded-full font-label-caps text-label-caps hover:bg-on-primary-fixed-variant transition-colors shadow-sm" href="#">
+                    Start Selling
+                </a>
+<button class="md:hidden text-on-surface-variant">
+<span class="material-symbols-outlined">menu</span>
+</button>
+</div>
+</div>
+</header>
+<main class="flex-grow flex flex-col">
+<!-- Hero Section -->
+<section class="w-full px-margin-mobile md:px-margin-desktop py-xl md:py-24 max-w-7xl mx-auto flex flex-col md:flex-row items-center gap-xl md:gap-24 relative overflow-hidden">
+<div class="w-full md:w-1/2 flex flex-col items-start gap-lg z-10">
+<h1 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-background max-w-lg">
+                    Sell second-hand items faster
+                </h1>
+<p class="font-body-main text-body-main text-on-surface-variant max-w-md">
+                    Our smart agent analyzes your photos, drafts a compelling listing, and suggests the optimal price. You review, approve, and get back to your life.
+                </p>
+<div class="flex flex-col sm:flex-row gap-md mt-sm w-full sm:w-auto">
+<a class="bg-primary text-on-primary px-lg py-[14px] rounded-lg font-title-card text-title-card text-center hover:bg-on-primary-fixed-variant transition-colors shadow-sm flex items-center justify-center gap-xs" href="#">
+                        Start selling
+                        <span class="material-symbols-outlined">arrow_forward</span>
+</a>
+<a class="border border-outline text-secondary px-lg py-[14px] rounded-lg font-title-card text-title-card text-center hover:bg-surface-muted transition-colors flex items-center justify-center gap-xs" href="#">
+                        Browse marketplace
+                    </a>
+</div>
+<div class="flex items-center gap-sm mt-lg">
+<div class="flex -space-x-sm">
+<img alt="User avatar" class="w-10 h-10 rounded-full border-2 border-app-bg object-cover" data-alt="A close-up portrait of a smiling young woman with natural makeup and dark curly hair, looking directly at the camera. The background is a soft, out-of-focus grey. The lighting is bright and even, creating a professional, welcoming look suitable for a profile picture in a warm, light-mode modern marketplace design." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFd9sqxYg5eE04cvCZ9JbeNhAUDYvtinKNQNxDgTrcKG9Z6dRDpUq_Qd_m2x8jQt0loYFX-2rgWvur3-oU3fGaLD4ArCNYkStwsY2GWtbilCnqhXpZNZJVOmpIK06zh5TL8SHuHwLl0eQo5x8TDUm2rWubmGucP8g8xe7ii_P3viNJzhNmV8yVjqOX1QFEhhVMjxixpBOoi7JFKZq8pRhmgg2wo25HI1pbfy66TWDHZY70K4cuc4dHm-YE_TtDouzCT5KIdFHjAN4"/>
+<img alt="User avatar" class="w-10 h-10 rounded-full border-2 border-app-bg object-cover" data-alt="A portrait of a man with short dark hair and a light beard, wearing a casual denim shirt. He has a neutral, approachable expression. The background is slightly blurred and features warm, earthy tones. The lighting is soft and natural, aligning with a reliable, pragmatic marketplace aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDerQUrvawmVefXDetaYdqE7HkLMff6G7GuvOPTq9XK8x9l2kPstZbTqeJxU87VWCW8dbnehTtxds_0pgTMiaofxhr35j7QR8R9tQcnW1bWg8BAzb_kLlOeNh2K6xy_s5PZGNkERAWgNqLCagtvzxd3YWvdGouGl1q7_k6sbSgXleXswj5LvRw42uyxomB47ckUTlsYHJDxM-ANVKvoYGrQ_bZpzN_CrEPEOrik6QjNFWmrsRQb-WPUCEtGukxCCuwUcX9-JRQQ43Y"/>
+<img alt="User avatar" class="w-10 h-10 rounded-full border-2 border-app-bg object-cover" data-alt="A close-up of a young woman with long blonde hair smiling brightly. She is wearing a simple white top. The background is a clean, out-of-focus light tone. The overall image is bright and cheerful, fitting perfectly into a clean, modern, light-mode user interface as a verified seller badge." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcAF09nZS9YVYdKYJisJBeW7TLDoBFjzeiYd4b07JSHEnFhJuKpQk42CsYWlgjZA5h4UVJHYjMrPJVeSMVnuFAxKSfpAoaW4LTTkjPsE4TSsm32USbneguuMdAqajr1pxJE3XSKegCNV72JpUZhhdwNt-GnvEF0-ChWOe5p3sVuCkqF1KTVtoJ1C5zTeGhrtH3P38r56uckkrIywH0lHi8pIPHjPXx2Fb7Q87HNZusETxG2HmnyaJyJdzlbxTTPhZKpPe8bEuMLUc"/>
+</div>
+<div class="font-body-sm text-body-sm text-on-surface-variant flex flex-col">
+<span class="font-bold text-on-background">Joined by 10,000+ sellers</span>
+<span>Saving an average of 15 mins per listing.</span>
+</div>
+</div>
+</div>
+<div class="w-full md:w-1/2 relative flex justify-center lg:justify-end z-10 mt-lg md:mt-0">
+<!-- Phone Mockup Container -->
+<div class="relative w-full max-w-[340px] h-[680px] bg-white rounded-[40px] border-[12px] border-surface-container-high shadow-2xl overflow-hidden flex flex-col">
+<!-- Status Bar -->
+<div class="h-6 w-full bg-white flex justify-between items-center px-4 pt-2">
+<span class="text-[10px] font-bold">9:41</span>
+<div class="flex gap-1">
+<span class="material-symbols-outlined text-[14px]">signal_cellular_4_bar</span>
+<span class="material-symbols-outlined text-[14px]">wifi</span>
+<span class="material-symbols-outlined text-[14px]">battery_full</span>
+</div>
+</div>
+<!-- App Content -->
+<div class="flex-1 bg-surface-muted p-sm overflow-y-auto pb-lg">
+<div class="bg-white rounded-xl p-md shadow-sm mb-md flex items-center gap-md">
+<img alt="Item preview" class="w-20 h-20 rounded-lg object-cover" data-alt="A high-quality photo of a vintage mechanical typewriter sitting on a clean, light wooden desk. The lighting is bright and natural, casting soft shadows that highlight the textures of the keys and metal casing. The overall aesthetic is warm and inviting, perfect for a high-end second-hand marketplace listing." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCIZV_mQsp1t-Mrzw0to_rJYef8Mr1_HtTT947ixr007aaEEwK3JjOFh7BcAD-pota93FjcED8hQ6lZnoLG6HapwQ47H5o4Zq-soliQrONZ-eWJhG12ny8F2buPZ9AWyoa4l7c-yY9WdiAhSy-50oYO_GRIzYSJrEFUc8iDyRmzqWYPfDbotCTCxcyo3a05Ppivf3wIE3Zcn9f7fosjIv-0Kc6tpw1aG7Fir9Rc8KSaG6oJmUzxXm7KRvGdtxJmuq7PKHT-mKW8ah0"/>
+<div>
+<h3 class="font-title-card text-title-card text-on-background leading-tight">Vintage Typewriter</h3>
+<p class="font-body-sm text-body-sm text-text-secondary mt-1">Analyzing details...</p>
+</div>
+</div>
+<!-- Progress Steps -->
+<div class="bg-white rounded-xl p-md shadow-sm mb-md flex flex-col gap-sm">
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-success text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-background">Identifying object</span>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-success text-[20px]" style="font-variation-settings: 'FILL' 1;">check_circle</span>
+<span class="font-body-sm text-body-sm text-on-background">Extracting brand &amp; model</span>
+</div>
+<div class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-primary animate-spin text-[20px]">sync</span>
+<span class="font-body-sm text-body-sm text-on-background font-bold">Checking market prices</span>
+</div>
+<div class="flex items-center gap-sm opacity-50">
+<span class="material-symbols-outlined text-outline text-[20px]">pending</span>
+<span class="font-body-sm text-body-sm text-on-background">Drafting description</span>
+</div>
+</div>
+<!-- Price Recommendation -->
+<div class="bg-white rounded-xl p-md shadow-sm border border-border-subtle">
+<div class="flex items-start justify-between mb-sm">
+<div>
+<span class="font-label-caps text-label-caps text-primary uppercase tracking-wider">Suggested Price</span>
+<div class="font-display-lg-mobile text-display-lg-mobile text-on-background mt-1">$145</div>
+</div>
+<span class="bg-surface-container px-2 py-1 rounded text-xs font-bold text-on-surface-variant flex items-center gap-1">
+<span class="material-symbols-outlined text-[14px]">trending_up</span>
+                                    High demand
+                                </span>
+</div>
+<p class="font-body-sm text-body-sm text-on-surface-variant mb-md">Based on 12 recent sales of similar condition items in your area.</p>
+<div class="flex gap-2">
+<button class="flex-1 bg-primary text-on-primary py-2 rounded-lg font-title-card text-title-card text-sm hover:bg-on-primary-fixed-variant transition-colors">Accept</button>
+<button class="flex-1 border border-outline text-secondary py-2 rounded-lg font-title-card text-title-card text-sm hover:bg-surface-muted transition-colors">Edit</button>
+</div>
+</div>
+</div>
+</div>
+<!-- Decorative background blob -->
+<div class="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[120%] h-[120%] bg-surface-container rounded-full blur-3xl -z-10 opacity-70"></div>
+</div>
+</section>
+<!-- How it Works Section -->
+<section class="w-full bg-white border-y border-outline-variant py-xl md:py-24">
+<div class="px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto">
+<div class="text-center mb-xl">
+<h2 class="font-headline-md text-headline-md text-on-background">Four simple steps. Zero hassle.</h2>
+<p class="font-body-main text-body-main text-on-surface-variant mt-sm">List an item in under a minute with agentic assistance.</p>
+</div>
+<div class="grid grid-cols-1 md:grid-cols-4 gap-xl">
+<!-- Step 1 -->
+<div class="flex flex-col items-center text-center group">
+<div class="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-md group-hover:bg-primary-container transition-colors duration-300">
+<span class="material-symbols-outlined text-secondary text-3xl group-hover:text-on-primary-container transition-colors duration-300">add_a_photo</span>
+</div>
+<h3 class="font-title-card text-title-card text-on-background mb-sm">1. Upload</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Snap a few photos. The agent needs visuals to start.</p>
+</div>
+<!-- Step 2 -->
+<div class="flex flex-col items-center text-center group">
+<div class="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-md group-hover:bg-primary-container transition-colors duration-300">
+<span class="material-symbols-outlined text-secondary text-3xl group-hover:text-on-primary-container transition-colors duration-300">auto_awesome</span>
+</div>
+<h3 class="font-title-card text-title-card text-on-background mb-sm">2. AI Drafts</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">We instantly generate a title, description, and specs.</p>
+</div>
+<!-- Step 3 -->
+<div class="flex flex-col items-center text-center group">
+<div class="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-md group-hover:bg-primary-container transition-colors duration-300">
+<span class="material-symbols-outlined text-secondary text-3xl group-hover:text-on-primary-container transition-colors duration-300">sell</span>
+</div>
+<h3 class="font-title-card text-title-card text-on-background mb-sm">3. Choose Price</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Review market data and select a recommended price tier.</p>
+</div>
+<!-- Step 4 -->
+<div class="flex flex-col items-center text-center group">
+<div class="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-md group-hover:bg-primary-container transition-colors duration-300">
+<span class="material-symbols-outlined text-secondary text-3xl group-hover:text-on-primary-container transition-colors duration-300">publish</span>
+</div>
+<h3 class="font-title-card text-title-card text-on-background mb-sm">4. Publish</h3>
+<p class="font-body-sm text-body-sm text-on-surface-variant">Approve the listing and it goes live to local buyers.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Marketplace Preview Grid -->
+<section class="w-full px-margin-mobile md:px-margin-desktop py-xl md:py-24 max-w-7xl mx-auto">
+<div class="flex justify-between items-end mb-lg">
+<div>
+<h2 class="font-headline-md text-headline-md text-on-background">Freshly Listed</h2>
+<p class="font-body-main text-body-main text-on-surface-variant mt-1">Items in your area, drafted by our agent.</p>
+</div>
+<a class="hidden md:flex items-center gap-xs font-title-card text-title-card text-primary hover:text-on-primary-fixed-variant transition-colors" href="#">
+                    View all
+                    <span class="material-symbols-outlined text-sm">arrow_forward</span>
+</a>
+</div>
+<div class="grid grid-cols-2 md:grid-cols-4 gap-md md:gap-lg">
+<!-- Card 1 -->
+<div class="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col">
+<div class="relative aspect-square w-full bg-surface-muted overflow-hidden">
+<img alt="Headphones" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A pair of sleek, modern over-ear headphones resting on a minimalist white surface. The lighting is soft and diffused, creating subtle shadows that emphasize the high-quality materials and clean lines of the product. The color palette is neutral and sophisticated, fitting a premium second-hand marketplace aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBK9I_pnd5yehuc4RU_FZySByCAZjQBrrv-EKHM2bDtzNof2k9K1qUGsiKvVjQj-yncfXcb29pcIE5TsjAFv5HRRL5Or-eDCs6pKMPrX0bWk0t4Gim9bb84f_W78BEUSyv0csL2LQGTqxj6vM0EdFmpHfZEU1UEiO_FkzlUEEz-vGyymlVccYfPcxNfqr1vepr3BjKKYL72wngMIePekG1UHOIBOxaYHKMBdyVqSbw70NH0vufXRPfJztSKHf0ojma_1ymPuvGp8SY"/>
+<div class="absolute top-sm right-sm bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-secondary text-[20px]">favorite</span>
+</div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-grow">
+<div class="font-headline-md text-headline-md text-on-background mb-xs">$120</div>
+<h3 class="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Sony WH-1000XM4</h3>
+<div class="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
+<span class="material-symbols-outlined text-status-success text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-body-sm text-body-sm text-text-secondary truncate">Verified Seller • 2mi</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col">
+<div class="relative aspect-square w-full bg-surface-muted overflow-hidden">
+<img alt="Headphones" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A stylish, minimalist pair of black wireless headphones placed elegantly against a solid, muted terracotta background. The lighting is studio-quality, casting sharp but pleasing shadows. The image focuses on the sleek design and premium feel, aligning with a pragmatic and reliable marketplace visual style." src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw1ZMSefBF9HSu7ZAtkZmBeK6NdLMGifkc8hN3JCqrQ66_UHbzGDoUD0kA8zy7p-3IS2T8m4tDwFrD89LVjgAd_Nh55kSfwxKTOpl-G9xiBQ8jN6V7n8odzH4R3zdbKcNJFBCCje15evTf8mLr5jfdV7jisYKUKO1cvypYDV0g0x7w4bPvr1DKel5b0xe7i4nbWPOhRYL80G6_Mo8jPpb5jbFpIZ29g1Ix_GzxHUnrOrkU-y4ZIsrkFXGu8kR9pXgV5Yp4ohUm6Qs"/>
+<div class="absolute top-sm right-sm bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-secondary text-[20px]">favorite</span>
+</div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-grow">
+<div class="font-headline-md text-headline-md text-on-background mb-xs">$85</div>
+<h3 class="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Premium Wireless Audio</h3>
+<div class="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
+<span class="material-symbols-outlined text-outline text-[16px]">location_on</span>
+<span class="font-body-sm text-body-sm text-text-secondary truncate">Downtown • 4mi</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col hidden md:flex">
+<div class="relative aspect-square w-full bg-surface-muted overflow-hidden">
+<img alt="Watch" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A modern smartwatch with a light-colored band resting cleanly on a pale grey surface. The composition is straightforward and utilitarian, with bright, even lighting that highlights the screen and casing details. The overall aesthetic is calm, professional, and highly scannable, typical of a modern marketplace interface." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcs-_UBSZbYVwVmvYzoW5TyHBykVmovUkFTLFE-nG-c_wnBbU4RYCEwXMrDcbBfzWb2UDCl5I1MgkVLlAHvbUmHGiB26PeHmbC0du31mydOXCIi-psPXq7ehad_SiP18Y7gIauIrX91hDBDtb28ZfJ1kZ-oFuXS_eEtti7Pbn8Gc545L54LYFF8yKnGcCbuo6OoTSH6Xg0LLOhSWQYbwHpS8QXCOZ3ZTGv_16HK9_psRqFa5jati616ItNcspG44m7akQn5JXDwt0"/>
+<div class="absolute top-sm right-sm bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-secondary text-[20px]">favorite</span>
+</div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-grow">
+<div class="font-headline-md text-headline-md text-on-background mb-xs">$150</div>
+<h3 class="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Smartwatch Gen 5</h3>
+<div class="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
+<span class="material-symbols-outlined text-status-success text-[16px]" style="font-variation-settings: 'FILL' 1;">verified</span>
+<span class="font-body-sm text-body-sm text-text-secondary truncate">Top Seller • 1mi</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col hidden md:flex">
+<div class="relative aspect-square w-full bg-surface-muted overflow-hidden">
+<img alt="Coffee Maker" class="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" data-alt="A sleek espresso machine sitting on a clean kitchen counter. The lighting is warm and natural, suggesting a morning setting. The background is slightly blurred to keep focus on the machine's stainless steel and matte black finishes. The tone is domestic yet premium, fitting a pragmatic marketplace." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT9zqLo-C1ZhTRh6mW506C8AV2gqWf0LypFG1Npuow5k8scTtzsGWvzrMYEZ50q6ZVF70iSOUg3xuzvPuBPUn7z3g5KQwMExTsWrvcuRDOvxZOqBzK_8ik-rG_iEPR-T1yVDsGrO0rn9ZJ3CNJ-42FXKKWCZClo8mWZCij3fl_8zxFx1zrQ1ryIa_v_yMEMdgrcqr-we9Pg4dTCsUv9ccAg-p-9kkLdLb7gQHpTZgeGrRBCnLR8Jjbt2zTNJo5HUQKHlwN_QYuZKs"/>
+<div class="absolute top-sm right-sm bg-white/80 backdrop-blur-sm p-2 rounded-full cursor-pointer hover:bg-white transition-colors">
+<span class="material-symbols-outlined text-secondary text-[20px]">favorite</span>
+</div>
+</div>
+<div class="p-sm md:p-md flex flex-col flex-grow">
+<div class="font-headline-md text-headline-md text-on-background mb-xs">$220</div>
+<h3 class="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Espresso Machine Pro</h3>
+<div class="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
+<span class="material-symbols-outlined text-outline text-[16px]">location_on</span>
+<span class="font-body-sm text-body-sm text-text-secondary truncate">Westside • 5mi</span>
+</div>
+</div>
+</div>
+</div>
+<a class="md:hidden mt-lg w-full border border-outline text-secondary px-lg py-[14px] rounded-lg font-title-card text-title-card text-center hover:bg-surface-muted transition-colors flex items-center justify-center gap-xs" href="#">
+                View all items
+            </a>
+</section>
+<!-- Trust Section -->
+<section class="w-full bg-surface-container py-xl md:py-24">
+<div class="px-margin-mobile md:px-margin-desktop max-w-7xl mx-auto flex flex-col lg:flex-row items-center gap-xl">
+<div class="w-full lg:w-1/2 flex flex-col items-start gap-md">
+<div class="bg-surface-card px-3 py-1 rounded-full border border-border-subtle flex items-center gap-2 mb-sm">
+<span class="material-symbols-outlined text-primary text-[18px]">verified_user</span>
+<span class="font-label-caps text-label-caps text-on-surface-variant tracking-wider">Seller Control</span>
+</div>
+<h2 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-background leading-tight">
+                        AI drafts.<br/>You approve.
+                    </h2>
+<p class="font-body-main text-body-main text-on-surface-variant max-w-md">
+                        We believe in pragmatic assistance. Our agent does the heavy lifting of researching and formatting, but you always have the final say. Edit descriptions, adjust prices, and control your listing end-to-end.
+                    </p>
+<ul class="flex flex-col gap-sm mt-md font-body-main text-body-main text-on-background">
+<li class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-success">check</span>
+                            Transparent pricing logic
+                        </li>
+<li class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-success">check</span>
+                            Fully editable descriptions
+                        </li>
+<li class="flex items-center gap-sm">
+<span class="material-symbols-outlined text-status-success">check</span>
+                            No hidden fees or auto-publishing
+                        </li>
+</ul>
+</div>
+<div class="w-full lg:w-1/2 flex justify-center">
+<div class="bg-surface-card rounded-2xl p-lg shadow-lg border border-border-subtle w-full max-w-md">
+<div class="flex justify-between items-center mb-md border-b border-border-subtle pb-sm">
+<h3 class="font-title-card text-title-card text-on-background">Review Draft</h3>
+<button class="text-primary hover:text-on-primary-fixed-variant font-label-caps text-label-caps">EDIT</button>
+</div>
+<div class="space-y-md">
+<div>
+<label class="font-label-caps text-label-caps text-text-secondary block mb-1">Title</label>
+<div class="w-full bg-surface-muted border border-border-subtle rounded p-2 font-body-main text-body-main text-on-background">
+                                    Vintage Wooden Desk Chair
+                                </div>
+</div>
+<div>
+<label class="font-label-caps text-label-caps text-text-secondary block mb-1">Description</label>
+<div class="w-full bg-surface-muted border border-border-subtle rounded p-2 font-body-sm text-body-sm text-on-background h-24 overflow-y-auto">
+                                    Mid-century style solid wood desk chair in excellent condition. Features curved back support and brass detailing on the legs. Perfect for a home office. Minor wear consistent with age.
+                                </div>
+</div>
+<div class="flex gap-md">
+<div class="flex-1">
+<label class="font-label-caps text-label-caps text-text-secondary block mb-1">Condition</label>
+<div class="w-full bg-surface-muted border border-border-subtle rounded p-2 font-body-main text-body-main text-on-background flex justify-between items-center">
+                                        Good
+                                        <span class="material-symbols-outlined text-[18px]">expand_more</span>
+</div>
+</div>
+<div class="flex-1">
+<label class="font-label-caps text-label-caps text-text-secondary block mb-1">Price</label>
+<div class="w-full bg-surface-muted border border-primary rounded p-2 font-body-main text-body-main text-on-background font-bold flex items-center gap-1">
+                                        $ 85
+                                    </div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="w-full px-margin-mobile md:px-margin-desktop py-xl md:py-32 max-w-4xl mx-auto text-center flex flex-col items-center">
+<h2 class="font-display-lg-mobile text-display-lg-mobile md:font-display-lg md:text-display-lg text-on-background mb-md">Ready to declutter?</h2>
+<p class="font-body-main text-body-main text-on-surface-variant max-w-lg mb-lg">
+                Join thousands of sellers who have discovered the fastest, most reliable way to sell second-hand items locally.
+            </p>
+<a class="bg-primary text-on-primary px-xl py-4 rounded-lg font-title-card text-title-card hover:bg-on-primary-fixed-variant transition-colors shadow-md flex items-center justify-center gap-xs text-lg" href="#">
+                Start selling now
+                <span class="material-symbols-outlined">rocket_launch</span>
+</a>
+</section>
+</main>
+<!-- Footer Component -->
+<footer class="bg-surface-container dark:bg-inverse-surface border-t border-outline-variant dark:border-outline full-width">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-xl gap-lg max-w-7xl mx-auto">
+<div class="flex flex-col items-center md:items-start gap-sm">
+<a class="font-headline-md text-headline-md font-bold text-on-secondary-container dark:text-secondary-fixed flex items-center gap-xs focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">
+<span class="material-symbols-outlined" style="font-variation-settings: 'FILL' 1;">eco</span>
+                    EcoValue
+                </a>
+<span class="font-body-sm text-body-sm text-secondary dark:text-secondary-fixed-dim">
+                    © 2024 EcoValue Marketplace. Pragmatic selling for everyone.
+                </span>
+</div>
+<nav class="flex flex-wrap justify-center gap-md font-label-caps text-label-caps text-on-secondary-fixed-variant dark:text-secondary-fixed-dim">
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded p-1" href="#">Privacy Policy</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded p-1" href="#">Terms of Service</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded p-1" href="#">Safety Tips</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded p-1" href="#">Support</a>
+<a class="hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded p-1" href="#">Sustainability Report</a>
+</nav>
+</div>
+</footer>
+</body></html>

@@ -1,8 +1,10 @@
-import React, { useState } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
-import { User, Mail, Bell, Shield, Trash2, Camera, MapPin, ChevronRight } from 'lucide-react';
+import React, { useState, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useLanguage } from '../context/LanguageContext';
+import { api } from '../api';
 
 const Profile = () => {
+  const { t } = useLanguage();
   const [userData, setUserData] = useState({
     name: 'John Doe',
     email: 'john@example.com',
@@ -10,47 +12,73 @@ const Profile = () => {
     bio: 'Sürdürülebilir moda tutkunu ve teknoloji meraklısı.'
   });
 
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+
+  useEffect(() => {
+    const fetchUser = async () => {
+      try {
+        const data = await api.getMe();
+        setUserData(prev => ({
+          ...prev,
+          name: data.name,
+          email: data.email
+        }));
+      } catch (err) {
+        console.error("Failed to load user data", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchUser();
+  }, []);
+
+  const handleSave = async (e) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await api.updateMe({ name: userData.name, email: userData.email });
+      alert("Profile updated successfully!");
+    } catch (err) {
+      alert("Failed to update profile.");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  if (loading) {
+    return <div className="p-xl text-center">Loading Profile...</div>;
+  }
+
   return (
-    <div className="container mx-auto px-6 py-16 max-w-5xl pb-32">
-      <div className="flex flex-col md:flex-row gap-16">
+    <div className="w-full px-margin-mobile md:px-margin-desktop py-xl md:py-24 max-w-5xl mx-auto flex flex-col min-h-[calc(100vh-80px)]">
+      <div className="flex flex-col md:flex-row gap-lg">
         {/* Sidebar */}
         <aside className="w-full md:w-80 shrink-0">
-          <div className="bg-white rounded-[3rem] p-10 shadow-2xl shadow-black/5 border border-border/20 text-center sticky top-28">
-            <div className="relative w-32 h-32 mx-auto mb-6">
-              <div className="w-full h-full rounded-[2.5rem] bg-muted flex items-center justify-center text-4xl font-black text-secondary border-4 border-white shadow-xl">
+          <div className="bg-surface-card rounded-2xl p-lg shadow-sm border border-border-subtle text-center sticky top-24">
+            <div className="relative w-32 h-32 mx-auto mb-md">
+              <div className="w-full h-full rounded-full bg-surface-muted flex items-center justify-center font-display-lg-mobile text-display-lg-mobile text-on-surface-variant border-4 border-surface-card shadow-sm">
                 JD
               </div>
-              <button className="absolute -bottom-2 -right-2 bg-primary text-white p-3 rounded-2xl shadow-lg border-4 border-white active:scale-90 transition-all">
-                <Camera size={18} />
+              <button className="absolute bottom-0 right-0 bg-primary text-on-primary p-2 rounded-full shadow-md border-4 border-surface-card hover:scale-105 active:scale-95 transition-all">
+                <span className="material-symbols-outlined text-[20px]">photo_camera</span>
               </button>
             </div>
-            <h2 className="text-2xl font-black tracking-tighter text-secondary mb-1">{userData.name}</h2>
-            <p className="text-muted-foreground text-sm font-medium mb-8">{userData.email}</p>
+            <h2 className="font-headline-md text-headline-md text-on-background mb-1">{userData.name}</h2>
+            <p className="font-body-sm text-body-sm text-text-secondary mb-lg">{userData.email}</p>
             
-            <nav className="space-y-2 text-left">
-              <button className="w-full flex items-center justify-between p-4 bg-primary/5 text-primary rounded-2xl font-bold transition-all">
-                <div className="flex items-center gap-3">
-                  <User size={18} /> Profil Bilgileri
+            <nav className="space-y-sm text-left">
+              <button className="w-full flex items-center justify-between p-sm bg-primary-container/20 text-primary rounded-xl font-title-card text-title-card transition-all">
+                <div className="flex items-center gap-sm">
+                  <span className="material-symbols-outlined text-[20px]">person</span> {t('profile.info')}
                 </div>
-                <ChevronRight size={16} />
-              </button>
-              <button className="w-full flex items-center justify-between p-4 hover:bg-muted text-muted-foreground rounded-2xl font-bold transition-all">
-                <div className="flex items-center gap-3">
-                  <Bell size={18} /> Bildirimler
-                </div>
-                <ChevronRight size={16} />
-              </button>
-              <button className="w-full flex items-center justify-between p-4 hover:bg-muted text-muted-foreground rounded-2xl font-bold transition-all">
-                <div className="flex items-center gap-3">
-                  <Shield size={18} /> Güvenlik
-                </div>
-                <ChevronRight size={16} />
+                <span className="material-symbols-outlined text-[20px]">chevron_right</span>
               </button>
             </nav>
 
-            <div className="mt-12 pt-10 border-t border-border">
-              <button className="w-full flex items-center justify-center gap-3 p-4 bg-destructive/10 text-destructive rounded-2xl font-black text-sm uppercase tracking-widest hover:bg-destructive hover:text-white transition-all">
-                <Trash2 size={18} /> Hesabı Sil
+            <div className="mt-lg pt-lg border-t border-border-subtle">
+              <button className="w-full flex items-center justify-center gap-xs p-sm bg-status-error/10 text-status-error rounded-xl font-label-caps text-label-caps uppercase tracking-wider hover:bg-status-error hover:text-on-error transition-all">
+                <span className="material-symbols-outlined text-[20px]">delete</span> {t('profile.delete')}
               </button>
             </div>
           </div>
@@ -61,61 +89,62 @@ const Profile = () => {
           <motion.div 
             initial={{ opacity: 0, x: 20 }}
             animate={{ opacity: 1, x: 0 }}
-            className="bg-white rounded-[3rem] p-12 shadow-2xl shadow-black/5 border border-border/20"
+            className="bg-surface-card rounded-2xl p-lg shadow-sm border border-border-subtle"
           >
-            <h3 className="text-3xl font-black tracking-tighter text-secondary mb-10">Profil Ayarları</h3>
+            <h3 className="font-headline-md text-headline-md text-on-background mb-lg">{t('profile.title')}</h3>
             
-            <form className="space-y-8">
-              <div className="grid md:grid-cols-2 gap-8">
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-secondary/60 ml-4">Ad Soyad</label>
+            <form className="space-y-md" onSubmit={handleSave}>
+              <div className="grid md:grid-cols-2 gap-md">
+                <div className="space-y-1">
+                  <label className="font-label-caps text-label-caps uppercase tracking-wider text-text-secondary ml-2">{t('profile.name')}</label>
                   <input 
                     type="text" 
                     value={userData.name}
                     onChange={(e) => setUserData({...userData, name: e.target.value})}
-                    className="w-full bg-muted/30 border-none rounded-2xl py-5 px-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    className="w-full bg-surface-muted border border-border-subtle rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body-main text-body-main text-on-surface"
                   />
                 </div>
-                <div className="space-y-2">
-                  <label className="text-xs font-black uppercase tracking-widest text-secondary/60 ml-4">E-Posta</label>
+                <div className="space-y-1">
+                  <label className="font-label-caps text-label-caps uppercase tracking-wider text-text-secondary ml-2">{t('profile.email')}</label>
                   <input 
                     type="email" 
                     value={userData.email}
                     disabled
-                    className="w-full bg-muted/10 border-none rounded-2xl py-5 px-6 font-medium text-muted-foreground cursor-not-allowed"
+                    className="w-full bg-surface-container-high/50 border border-border-subtle rounded-xl py-3 px-4 font-body-main text-body-main text-text-secondary cursor-not-allowed"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-secondary/60 ml-4">Konum</label>
+              <div className="space-y-1">
+                <label className="font-label-caps text-label-caps uppercase tracking-wider text-text-secondary ml-2">{t('profile.location')}</label>
                 <div className="relative">
-                  <MapPin className="absolute left-6 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+                  <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-text-secondary">location_on</span>
                   <input 
                     type="text" 
                     value={userData.location}
                     onChange={(e) => setUserData({...userData, location: e.target.value})}
-                    className="w-full bg-muted/30 border-none rounded-2xl py-5 pl-14 pr-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                    className="w-full bg-surface-muted border border-border-subtle rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body-main text-body-main text-on-surface"
                   />
                 </div>
               </div>
 
-              <div className="space-y-2">
-                <label className="text-xs font-black uppercase tracking-widest text-secondary/60 ml-4">Hakkında</label>
+              <div className="space-y-1">
+                <label className="font-label-caps text-label-caps uppercase tracking-wider text-text-secondary ml-2">{t('profile.bio')}</label>
                 <textarea 
                   rows="4"
                   value={userData.bio}
                   onChange={(e) => setUserData({...userData, bio: e.target.value})}
-                  className="w-full bg-muted/30 border-none rounded-[2rem] py-5 px-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium resize-none"
+                  className="w-full bg-surface-muted border border-border-subtle rounded-xl py-3 px-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body-main text-body-main text-on-surface resize-none"
                 />
               </div>
 
-              <div className="pt-6 border-t border-border flex justify-end">
+              <div className="pt-lg border-t border-border-subtle flex justify-end">
                 <button 
-                  type="button"
-                  className="bg-primary text-white px-12 py-5 rounded-2xl font-black text-lg shadow-xl shadow-primary/30 hover:scale-105 active:scale-95 transition-all"
+                  type="submit"
+                  disabled={saving}
+                  className="bg-primary text-on-primary px-lg py-sm rounded-xl font-title-card text-title-card shadow-sm hover:scale-[1.02] active:scale-[0.98] transition-all disabled:opacity-50"
                 >
-                  Değişiklikleri Kaydet
+                  {saving ? 'Saving...' : t('profile.save')}
                 </button>
               </div>
             </form>

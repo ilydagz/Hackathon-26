@@ -1,6 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import api from '../api/axios';
+import { api } from '../api';
 import { Camera, Loader2, Sparkles, Check, ChevronLeft, Zap, Target, X } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
 
@@ -48,11 +48,16 @@ const Create = () => {
     formData.append('file', file);
     
     try {
-      const response = await api.post('/api/analyze', formData, {
-        headers: { 'Content-Type': 'multipart/form-data' }
-      });
-      setAiData(response.data);
-      setStatus('results');
+      // Mocked AI analyze call
+      setTimeout(() => {
+        setAiData({
+          title: 'Vintage Wooden Desk Chair',
+          description: 'Mid-century style solid wood desk chair in excellent condition.',
+          quick_price: 850,
+          ideal_price: 1100
+        });
+        setStatus('results');
+      }, 2000);
     } catch (error) {
       console.error('Analysis failed:', error);
       setStatus('idle');
@@ -66,13 +71,13 @@ const Create = () => {
     setStatus('publishing');
     
     try {
-      await api.post('/api/listings', {
+      await api.createListing({
         title: aiData.title,
         description: aiData.description,
         selected_price: selectedPrice,
         image_url: image.name,
       });
-      navigate('/');
+      navigate('/feed');
     } catch (error) {
       console.error('Publishing failed:', error);
       setStatus('results');

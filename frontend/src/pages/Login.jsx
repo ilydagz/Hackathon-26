@@ -1,76 +1,96 @@
 import React, { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
+import { api } from '../api';
 import { motion } from 'framer-motion';
-import { Mail, Lock, ArrowRight, Sparkles } from 'lucide-react';
 
 const Login = () => {
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
 
-  const handleSubmit = (e) => {
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [error, setError] = useState('');
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
     setLoading(true);
-    // Simulate auth
-    setTimeout(() => {
-      navigate('/feed');
-    }, 1000);
+    setError('');
+    
+    try {
+      const data = await api.login(email, password);
+      localStorage.setItem('auth', 'true');
+      localStorage.setItem('token', data.access_token);
+      localStorage.setItem('role', data.user.role);
+      window.dispatchEvent(new Event('auth-change'));
+      navigate(data.user.role === 'admin' ? '/admin' : '/feed');
+    } catch (err) {
+      setError('Giriş başarısız. Lütfen bilgilerinizi kontrol edin.');
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-[90vh] flex items-center justify-center p-6 bg-[#FAF9F6]">
+    <div className="min-h-screen flex items-center justify-center p-margin-mobile md:p-margin-desktop bg-surface-container">
       <motion.div 
         initial={{ opacity: 0, y: 20 }}
         animate={{ opacity: 1, y: 0 }}
-        className="w-full max-w-md bg-white p-12 rounded-[3rem] shadow-2xl shadow-black/5 border border-border/40"
+        className="w-full max-w-md bg-surface-card p-xl rounded-[40px] shadow-lg border border-border-subtle"
       >
-        <div className="text-center mb-12">
-          <div className="w-16 h-16 bg-primary/10 rounded-2xl flex items-center justify-center mx-auto mb-6">
-            <Sparkles size={32} className="text-primary" fill="currentColor" />
+        <div className="text-center mb-xl">
+          <div className="w-16 h-16 bg-primary-container/20 rounded-2xl flex items-center justify-center mx-auto mb-md">
+            <span className="material-symbols-outlined text-[32px] text-primary" style={{fontVariationSettings: "'FILL' 1"}}>eco</span>
           </div>
-          <h1 className="text-4xl font-black tracking-tighter text-secondary mb-2">Hoş Geldiniz</h1>
-          <p className="text-muted-foreground font-medium uppercase tracking-widest text-[10px]">EcoValue Marketplace</p>
+          <h1 className="font-headline-md text-headline-md text-on-background mb-xs">Hoş Geldiniz</h1>
+          <p className="font-label-caps text-label-caps text-text-secondary uppercase tracking-wider">EcoValue Marketplace</p>
         </div>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-secondary/60 ml-4">E-Posta</label>
+        <form onSubmit={handleSubmit} className="space-y-md">
+          <div className="space-y-1">
+            <label className="font-label-caps text-label-caps uppercase tracking-wider text-text-secondary ml-2">E-Posta</label>
             <div className="relative">
-              <Mail className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">mail</span>
               <input 
                 type="email" 
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
                 required
-                className="w-full bg-muted/30 border-none rounded-2xl py-5 pl-14 pr-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                className="w-full bg-surface-muted border border-border-subtle rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body-main text-body-main text-on-surface"
                 placeholder="name@example.com"
               />
             </div>
           </div>
 
-          <div className="space-y-2">
-            <label className="text-xs font-black uppercase tracking-widest text-secondary/60 ml-4">Şifre</label>
+          <div className="space-y-1">
+            <label className="font-label-caps text-label-caps uppercase tracking-wider text-text-secondary ml-2">Şifre</label>
             <div className="relative">
-              <Lock className="absolute left-5 top-1/2 -translate-y-1/2 text-muted-foreground" size={18} />
+              <span className="material-symbols-outlined absolute left-4 top-1/2 -translate-y-1/2 text-on-surface-variant">lock</span>
               <input 
                 type="password" 
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
                 required
-                className="w-full bg-muted/30 border-none rounded-2xl py-5 pl-14 pr-6 focus:ring-2 focus:ring-primary/20 transition-all font-medium"
+                className="w-full bg-surface-muted border border-border-subtle rounded-xl py-3 pl-12 pr-4 focus:ring-2 focus:ring-primary/20 focus:border-primary transition-all font-body-main text-body-main text-on-surface"
                 placeholder="••••••••"
               />
             </div>
           </div>
 
+          {error && <p className="text-status-error text-sm text-center">{error}</p>}
+
           <button 
             type="submit"
             disabled={loading}
-            className="w-full bg-primary text-white py-5 rounded-2xl font-black text-lg shadow-xl shadow-primary/20 active:scale-95 transition-all flex items-center justify-center gap-2"
+            className="w-full bg-primary text-on-primary py-4 rounded-xl font-title-card text-title-card shadow-md active:scale-[0.98] transition-all flex items-center justify-center gap-xs mt-sm"
           >
             {loading ? "Giriş Yapılıyor..." : "Giriş Yap"}
-            {!loading && <ArrowRight size={20} />}
+            {!loading && <span className="material-symbols-outlined text-[20px]">arrow_forward</span>}
           </button>
         </form>
 
-        <div className="mt-12 text-center">
-          <p className="text-muted-foreground font-medium">
-            Hesabınız yok mu? <Link to="/register" className="text-primary font-black">Kayıt Ol</Link>
+        <div className="mt-xl text-center">
+          <p className="font-body-sm text-body-sm text-text-secondary">
+            Hesabınız yok mu? <Link to="/register" className="text-primary font-bold hover:underline">Kayıt Ol</Link>
           </p>
         </div>
       </motion.div>

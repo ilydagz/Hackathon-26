@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+
+<html class="light" lang="en"><head>
+<meta charset="utf-8"/>
+<meta content="width=device-width, initial-scale=1.0" name="viewport"/>
+<title>EcoValue - Pragmatic Selling</title>
+<script src="https://cdn.tailwindcss.com?plugins=forms,container-queries"></script>
+<link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;600;700&amp;family=Outfit:wght@600;700&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<link href="https://fonts.googleapis.com/css2?family=Material+Symbols+Outlined:wght,FILL@100..700,0..1&amp;display=swap" rel="stylesheet"/>
+<script id="tailwind-config">
+        tailwind.config = {
+            darkMode: "class",
+            theme: {
+                extend: {
+                    "colors": {
+                        "on-secondary-fixed-variant": "#5b403c",
+                        "inverse-surface": "#2b2e48",
+                        "status-success": "#81B29A",
+                        "surface-container": "#edecff",
+                        "on-primary-fixed": "#3c0800",
+                        "on-tertiary-fixed-variant": "#005144",
+                        "on-error-container": "#93000a",
+                        "tertiary-container": "#19a992",
+                        "inverse-primary": "#ffb4a1",
+                        "tertiary-fixed": "#7df7dd",
+                        "surface-bright": "#fbf8ff",
+                        "on-primary-container": "#5b1604",
+                        "on-primary-fixed-variant": "#7c2e19",
+                        "status-error": "#E63946",
+                        "surface-container-low": "#f4f2ff",
+                        "outline-variant": "#dbc1ba",
+                        "surface-muted": "#F4F3F0",
+                        "on-surface-variant": "#55423e",
+                        "on-secondary-fixed": "#2b1613",
+                        "primary": "#9a442d",
+                        "on-tertiary-fixed": "#00201a",
+                        "on-tertiary": "#ffffff",
+                        "app-bg": "#FAF9F6",
+                        "primary-container": "#e07a5f",
+                        "surface": "#fbf8ff",
+                        "error": "#ba1a1a",
+                        "outline": "#88726d",
+                        "tertiary-fixed-dim": "#5edbc1",
+                        "on-tertiary-container": "#00362d",
+                        "surface-card": "#FFFFFF",
+                        "primary-fixed-dim": "#ffb4a1",
+                        "surface-dim": "#d6d8f9",
+                        "inverse-on-surface": "#f1efff",
+                        "text-secondary": "#6B7280",
+                        "on-secondary": "#ffffff",
+                        "on-primary": "#ffffff",
+                        "on-error": "#ffffff",
+                        "primary-fixed": "#ffdbd2",
+                        "secondary-fixed-dim": "#e3beb8",
+                        "on-secondary-container": "#795c57",
+                        "surface-variant": "#dfe0ff",
+                        "surface-container-lowest": "#ffffff",
+                        "error-container": "#ffdad6",
+                        "background": "#fbf8ff",
+                        "border-subtle": "#E2E8F0",
+                        "secondary-fixed": "#ffdad4",
+                        "text-main": "#3D405B",
+                        "surface-container-highest": "#dfe0ff",
+                        "surface-tint": "#9a442d",
+                        "secondary": "#745853",
+                        "tertiary": "#006b5b",
+                        "on-surface": "#161a32",
+                        "secondary-container": "#fed7d0",
+                        "on-background": "#161a32",
+                        "surface-container-high": "#e6e6ff"
+                    },
+                    "borderRadius": {
+                        "DEFAULT": "0.25rem",
+                        "lg": "0.5rem",
+                        "xl": "0.75rem",
+                        "full": "9999px"
+                    },
+                    "spacing": {
+                        "xs": "8px",
+                        "lg": "24px",
+                        "xl": "32px",
+                        "md": "16px",
+                        "margin-mobile": "16px",
+                        "gutter": "16px",
+                        "margin-desktop": "48px",
+                        "sm": "12px",
+                        "base": "4px"
+                    },
+                    "fontFamily": {
+                        "headline-md": ["Outfit"],
+                        "display-lg-mobile": ["Outfit"],
+                        "body-sm": ["Manrope"],
+                        "label-caps": ["Manrope"],
+                        "display-lg": ["Outfit"],
+                        "title-card": ["Manrope"],
+                        "body-main": ["Manrope"]
+                    },
+                    "fontSize": {
+                        "headline-md": ["24px", { "lineHeight": "1.3", "fontWeight": "600" }],
+                        "display-lg-mobile": ["32px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "body-sm": ["14px", { "lineHeight": "1.5", "fontWeight": "400" }],
+                        "label-caps": ["12px", { "lineHeight": "1", "letterSpacing": "0.05em", "fontWeight": "700" }],
+                        "display-lg": ["48px", { "lineHeight": "1.2", "fontWeight": "700" }],
+                        "title-card": ["18px", { "lineHeight": "1.4", "fontWeight": "600" }],
+                        "body-main": ["16px", { "lineHeight": "1.5", "fontWeight": "400" }]
+                    }
+                }
+            }
+        }
+    </script>
+<style>
+        .material-symbols-outlined {
+            font-variation-settings: 'FILL' 0, 'wght' 400, 'GRAD' 0, 'opsz' 24;
+        }
+    </style>
+<style>
+    body {
+      min-height: max(884px, 100dvh);
+    }
+  </style>
+  </head>
+<body class="bg-app-bg text-text-main font-body-main antialiased selection:bg-primary-container selection:text-on-primary-container min-h-screen flex flex-col">
+<!-- TopNavBar -->
+<nav class="bg-app-bg dark:bg-inverse-surface border-b border-outline-variant dark:border-outline flat no shadows docked full-width top-0 sticky z-50">
+<div class="flex justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-4 max-w-7xl mx-auto">
+<div class="font-headline-md text-headline-md font-bold text-primary dark:text-primary-fixed-dim">EcoValue</div>
+<!-- Mobile nav links omitted per "responsive pivot" rules, but keeping primary action for utility -->
+<div class="flex items-center gap-md">
+<button class="font-body-sm text-body-sm font-semibold text-primary hover:text-primary-container transition-colors duration-200">Sign In</button>
+</div>
+</div>
+</nav>
+<main class="flex-grow w-full max-w-7xl mx-auto flex flex-col items-center">
+<!-- Hero Section -->
+<section class="w-full px-margin-mobile py-xl flex flex-col gap-lg items-center text-center">
+<div class="max-w-xl flex flex-col gap-sm">
+<h1 class="font-display-lg-mobile text-display-lg-mobile text-on-surface">Sell second-hand items faster</h1>
+<p class="font-body-main text-body-main text-text-secondary">Upload photos, review an AI-prepared listing, choose a suggested price, and publish when ready.</p>
+</div>
+<div class="flex flex-col w-full gap-sm sm:flex-row sm:justify-center">
+<button class="w-full sm:w-auto bg-primary text-on-primary font-title-card text-title-card px-lg py-sm rounded-lg hover:bg-primary-container transition-colors shadow-sm">Start selling</button>
+<button class="w-full sm:w-auto bg-transparent border border-secondary text-secondary font-title-card text-title-card px-lg py-sm rounded-lg hover:bg-surface-variant transition-colors">Browse marketplace</button>
+</div>
+<!-- Hero UI Preview -->
+<div class="mt-lg w-full max-w-sm bg-surface-card border border-border-subtle rounded-xl p-md shadow-sm flex flex-col gap-sm text-left">
+<div class="flex items-center gap-xs text-text-secondary font-label-caps text-label-caps uppercase mb-base">
+<span class="material-symbols-outlined text-[16px]">auto_awesome</span> AI Draft
+                </div>
+<div class="h-48 rounded-lg overflow-hidden relative bg-surface-muted">
+<img alt="UI mockup showing a photo of a mid-century modern wooden chair in a bright minimal room. The aesthetic aligns with a modern e-commerce mobile app on a light cream background." class="w-full h-full object-cover" data-alt="A clean, modern mobile UI mockup displaying an AI listing draft for a mid-century wooden chair. The chair is photographed in a minimalist, naturally lit room. The UI surrounds the image with soft cream backgrounds, subtle slate borders, and crisp terracotta accents, embodying a pragmatic, trustworthy second-hand marketplace aesthetic." src="https://lh3.googleusercontent.com/aida-public/AB6AXuA2hqP0QKXXaA00bqX4_FN9RUU5NlVFad0ahtkhZms5dlX_qOL4Y9UIFJxEoDlhI0euGExCtBrUaz5TNr3mEFzQzBuuJpr3o_iYwTieHwRHS75fbjPzKWbXIvCtl0Pi47caT4xEf55WUuYn-KulXG1sPpSEWDjqo4BRDA_q1EO66CCK-5XclAQXcUuFcVePIIIIiwbzSa4pzmIKAd22O-aTgf8_PMOKc_i0iSqcIYbKaQhAodQQxuc7AbVubpIIDy-srB8jRKwazaY"/>
+</div>
+<h3 class="font-title-card text-title-card text-on-surface">Mid-Century Modern Wooden Chair</h3>
+<div class="flex justify-between items-end mt-xs">
+<div class="flex flex-col gap-base">
+<span class="font-body-sm text-body-sm text-text-secondary">Suggested Market Price</span>
+<span class="font-headline-md text-headline-md text-primary">850 TL</span>
+</div>
+<button class="bg-surface-muted text-primary px-sm py-xs rounded-md font-body-sm text-body-sm border border-outline-variant">Edit</button>
+</div>
+</div>
+</section>
+<!-- How it Works -->
+<section class="w-full px-margin-mobile py-xl bg-surface-bright flex flex-col gap-lg border-t border-b border-border-subtle">
+<h2 class="font-headline-md text-headline-md text-on-surface text-center">How it works</h2>
+<div class="flex flex-col gap-md max-w-md mx-auto w-full">
+<div class="flex items-start gap-md bg-surface-card p-sm rounded-lg border border-border-subtle">
+<div class="bg-primary-container/20 text-primary p-sm rounded-full flex items-center justify-center h-10 w-10 shrink-0">
+<span class="material-symbols-outlined">add_a_photo</span>
+</div>
+<div>
+<h4 class="font-title-card text-title-card text-on-surface">1. Upload photos</h4>
+<p class="font-body-sm text-body-sm text-text-secondary">Snap a few clear pictures of your item.</p>
+</div>
+</div>
+<div class="flex items-start gap-md bg-surface-card p-sm rounded-lg border border-border-subtle">
+<div class="bg-primary-container/20 text-primary p-sm rounded-full flex items-center justify-center h-10 w-10 shrink-0">
+<span class="material-symbols-outlined">description</span>
+</div>
+<div>
+<h4 class="font-title-card text-title-card text-on-surface">2. AI drafts listing</h4>
+<p class="font-body-sm text-body-sm text-text-secondary">We generate a title and description automatically.</p>
+</div>
+</div>
+<div class="flex items-start gap-md bg-surface-card p-sm rounded-lg border border-border-subtle">
+<div class="bg-primary-container/20 text-primary p-sm rounded-full flex items-center justify-center h-10 w-10 shrink-0">
+<span class="material-symbols-outlined">sell</span>
+</div>
+<div>
+<h4 class="font-title-card text-title-card text-on-surface">3. Choose price</h4>
+<p class="font-body-sm text-body-sm text-text-secondary">Select from market suggestions or set your own.</p>
+</div>
+</div>
+<div class="flex items-start gap-md bg-surface-card p-sm rounded-lg border border-border-subtle">
+<div class="bg-primary-container/20 text-primary p-sm rounded-full flex items-center justify-center h-10 w-10 shrink-0">
+<span class="material-symbols-outlined">publish</span>
+</div>
+<div>
+<h4 class="font-title-card text-title-card text-on-surface">4. Publish</h4>
+<p class="font-body-sm text-body-sm text-text-secondary">Review your draft and set it live instantly.</p>
+</div>
+</div>
+</div>
+</section>
+<!-- Marketplace Preview -->
+<section class="w-full px-margin-mobile py-xl flex flex-col gap-lg">
+<div class="flex justify-between items-end">
+<h2 class="font-headline-md text-headline-md text-on-surface">Freshly Listed</h2>
+<a class="font-body-sm text-body-sm text-primary font-semibold hover:underline" href="#">View all</a>
+</div>
+<div class="grid grid-cols-2 gap-sm sm:gap-md">
+<!-- Card 1 -->
+<div class="bg-surface-card rounded-xl overflow-hidden border border-border-subtle flex flex-col">
+<div class="h-32 sm:h-48 relative bg-surface-muted">
+<img alt="Vintage camera on white background" class="w-full h-full object-cover" data-alt="A clean, well-lit product photograph of a vintage analog camera resting on a simple, muted surface. The style is utilitarian and direct, suitable for a trusted second-hand marketplace app interface. The overall tone is calm, featuring neutral slate and warm terracotta accents in the surrounding UI." src="https://lh3.googleusercontent.com/aida-public/AB6AXuCFBCYG2OTUCuM-q0cynWMpTAt7Wcuq_YnGJ7dFnie2RDUB-UpPCqF_u_-lxVsUG3WojudjAXzO09yRRwpeJwjIEf9jfT68vMk-o3wZs1JNNRB7jsCrrxfvFMrKNUk1936nZKKAEnmzzFi0xzzLMCAUcEX7pxHu98WM0Mh7RmfljxI0qSwM2T-z6XNbhKLiOoXNkCqVZ_i6S9geWk3LtrrxCV9YMP-L4Ss5I9GMXRXaepfiwBk_-xpZCj8Ekm_1UUtMhbzJPleCvwI"/>
+<button class="absolute top-sm right-sm bg-surface-card/80 p-xs rounded-full text-on-surface hover:text-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[20px]">favorite_border</span>
+</button>
+</div>
+<div class="p-sm flex flex-col gap-xs flex-grow">
+<div class="font-title-card text-title-card text-on-surface line-clamp-1">Vintage SLR Camera</div>
+<div class="font-headline-md text-headline-md text-primary mt-auto">1,200 TL</div>
+<div class="flex items-center gap-xs text-text-secondary font-body-sm text-body-sm mt-xs">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="truncate">Kadıköy, İstanbul</span>
+</div>
+</div>
+</div>
+<!-- Card 2 -->
+<div class="bg-surface-card rounded-xl overflow-hidden border border-border-subtle flex flex-col">
+<div class="h-32 sm:h-48 relative bg-surface-muted">
+<img alt="Wooden desk lamp" class="w-full h-full object-cover" data-alt="A minimal product shot of a wooden articulated desk lamp on a pale cream background. The lighting is soft and even, highlighting the wood grain. This image sits within a modern marketplace UI, framed by subtle borders and clean, pragmatic typography typical of a fast, reliable selling experience." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDF17X12zUOQJlvgOwjPUQLYokps-4x6VbEfnNrUv9yugn1cGxZ4CnYvSOdPjq_xpYZtHnw0Iam0gHyeO2qhxWxuSZDUkz-BHPekc9arBOt5JN9VEjXKY9gBL3oAj1z2a0OpuIeQfVdTILB_Uj726g5BG-vG-tcQbM5CPBrdk-_x2qkU0XlS38TT2Anqj1q3Cr4l3f-ESVE5rJ_rKBkgJ--XAixAlM5zmQBMwjhIWZGg-kEl6_unkq0Ma2K4kPr7e6qvBMR9hFgtjc"/>
+<button class="absolute top-sm right-sm bg-surface-card/80 p-xs rounded-full text-on-surface hover:text-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[20px]">favorite_border</span>
+</button>
+</div>
+<div class="p-sm flex flex-col gap-xs flex-grow">
+<div class="font-title-card text-title-card text-on-surface line-clamp-1">Articulated Desk Lamp</div>
+<div class="font-headline-md text-headline-md text-primary mt-auto">250 TL</div>
+<div class="flex items-center gap-xs text-text-secondary font-body-sm text-body-sm mt-xs">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="truncate">Beşiktaş, İstanbul</span>
+</div>
+</div>
+</div>
+<!-- Card 3 -->
+<div class="bg-surface-card rounded-xl overflow-hidden border border-border-subtle flex flex-col">
+<div class="h-32 sm:h-48 relative bg-surface-muted">
+<img alt="Ceramic vase" class="w-full h-full object-cover" data-alt="A straightforward photograph of a textured ceramic vase holding dried grasses, set against a light grey background. The image is presented as a high-utility marketplace listing, avoiding flashy effects in favor of calm reliability. The surrounding design employs a low-contrast, tonal layering approach." src="https://lh3.googleusercontent.com/aida-public/AB6AXuC3of5gnOSdWhXFkBTM4eW0F8Yf6oKcdaEVjCz9Iv48v9jtNfUqxLQrKmJ4SFQ5kWGpSdt1dhNkJg7SUBHDijhwmL3DhcOl8PbXyt_ZELVdtFmYo6C43ufSCWU3MP_HOofZtRtAp5rLFrMScmwWFZHAX7Sbe3P98d6KWKtLcHDneeBuDjGcxgKQgW95YvcuvdQfZhAzM8FqPZCU0W97Y_IahPZcnKGtDxefdUVX_kvYI4Ae9c1CaCNs72qP4EQfEcoZM-1_6p8zkkc"/>
+<button class="absolute top-sm right-sm bg-surface-card/80 p-xs rounded-full text-on-surface hover:text-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[20px]">favorite_border</span>
+</button>
+</div>
+<div class="p-sm flex flex-col gap-xs flex-grow">
+<div class="font-title-card text-title-card text-on-surface line-clamp-1">Textured Ceramic Vase</div>
+<div class="font-headline-md text-headline-md text-primary mt-auto">180 TL</div>
+<div class="flex items-center gap-xs text-text-secondary font-body-sm text-body-sm mt-xs">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="truncate">Şişli, İstanbul</span>
+</div>
+</div>
+</div>
+<!-- Card 4 -->
+<div class="bg-surface-card rounded-xl overflow-hidden border border-border-subtle flex flex-col">
+<div class="h-32 sm:h-48 relative bg-surface-muted">
+<img alt="Mechanical keyboard" class="w-full h-full object-cover" data-alt="A crisp, direct top-down view of a mechanical keyboard on a clean white desk mat. The product photography is clear and scannable, prioritizing trust and utility for a casual seller app. The UI framing it is light, fluid, and structured with a 4px baseline rhythm." src="https://lh3.googleusercontent.com/aida-public/AB6AXuDvKn5U_77nEq_Ugj8MvTr38cU8J1E3eKI0KOqWMQXqFL_E6ZY9YQGvC4h4HXsS2h4-pdD6LpPrWzrGlwAWl38BMDMoVJ8kL4MgoiFJypsxmSDO6crbtmq7q3s1AGjeBVItWIJ2bo3NUb1FT4Xkoo80iHJ7kqiCxL9Lisg6bUHAqR1fw6hBYQxrNP0z9JX6ymGuW5qrS2Uc-C-TOZlu6zoStViQCSVWebmXSQJ2JfajyR2n7AnrbAR8eObCAlxBmfJDi_6eZichxLI"/>
+<button class="absolute top-sm right-sm bg-surface-card/80 p-xs rounded-full text-on-surface hover:text-primary transition-colors backdrop-blur-sm">
+<span class="material-symbols-outlined text-[20px]">favorite_border</span>
+</button>
+</div>
+<div class="p-sm flex flex-col gap-xs flex-grow">
+<div class="font-title-card text-title-card text-on-surface line-clamp-1">Custom Mechanical Keyboard</div>
+<div class="font-headline-md text-headline-md text-primary mt-auto">1,450 TL</div>
+<div class="flex items-center gap-xs text-text-secondary font-body-sm text-body-sm mt-xs">
+<span class="material-symbols-outlined text-[16px]">location_on</span>
+<span class="truncate">Üsküdar, İstanbul</span>
+</div>
+</div>
+</div>
+</div>
+</section>
+<!-- Trust Section -->
+<section class="w-full px-margin-mobile py-xl bg-surface-container-low flex flex-col gap-lg border-t border-border-subtle">
+<div class="text-center">
+<h2 class="font-headline-md text-headline-md text-on-surface">AI drafts. You approve.</h2>
+<p class="font-body-main text-body-main text-text-secondary mt-xs">We do the heavy lifting, but you stay in control.</p>
+</div>
+<div class="grid grid-cols-1 sm:grid-cols-2 gap-sm max-w-2xl mx-auto w-full">
+<div class="bg-surface-card p-md rounded-lg border border-border-subtle flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary">edit_note</span>
+<span class="font-body-main text-body-main text-on-surface font-semibold">Editable title &amp; description</span>
+</div>
+<div class="bg-surface-card p-md rounded-lg border border-border-subtle flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary">price_change</span>
+<span class="font-body-main text-body-main text-on-surface font-semibold">Transparent price suggestions</span>
+</div>
+<div class="bg-surface-card p-md rounded-lg border border-border-subtle flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary">fact_check</span>
+<span class="font-body-main text-body-main text-on-surface font-semibold">Seller confirms before publish</span>
+</div>
+<div class="bg-surface-card p-md rounded-lg border border-border-subtle flex items-center gap-sm">
+<span class="material-symbols-outlined text-tertiary">chat_bubble</span>
+<span class="font-body-main text-body-main text-on-surface font-semibold">Safe, integrated chat</span>
+</div>
+</div>
+</section>
+<!-- Final CTA -->
+<section class="w-full px-margin-mobile py-xl flex flex-col items-center gap-md text-center bg-surface-bright border-t border-border-subtle pb-32">
+<h2 class="font-display-lg-mobile text-display-lg-mobile text-on-surface">List your first item in minutes</h2>
+<button class="bg-primary text-on-primary font-title-card text-title-card px-xl py-md rounded-lg hover:bg-primary-container transition-colors shadow-sm w-full sm:w-auto mt-sm">Start selling</button>
+</section>
+</main>
+<!-- Footer -->
+<footer class="bg-surface-container dark:bg-inverse-surface border-t border-outline-variant dark:border-outline flat no shadows full-width mt-auto">
+<div class="flex flex-col md:flex-row justify-between items-center w-full px-margin-mobile md:px-margin-desktop py-xl gap-lg max-w-7xl mx-auto">
+<div class="flex flex-col items-center md:items-start gap-xs">
+<div class="font-headline-md text-headline-md font-bold text-on-secondary-container dark:text-secondary-fixed">EcoValue</div>
+<p class="font-body-sm text-body-sm text-secondary dark:text-secondary-fixed-dim">© 2024 EcoValue Marketplace. Pragmatic selling for everyone.</p>
+</div>
+<ul class="flex flex-wrap justify-center gap-md font-label-caps text-label-caps uppercase">
+<li><a class="text-on-secondary-fixed-variant dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">Privacy Policy</a></li>
+<li><a class="text-on-secondary-fixed-variant dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">Terms of Service</a></li>
+<li><a class="text-on-secondary-fixed-variant dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">Safety Tips</a></li>
+<li><a class="text-on-secondary-fixed-variant dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">Support</a></li>
+<li><a class="text-on-secondary-fixed-variant dark:text-secondary-fixed-dim hover:text-primary dark:hover:text-primary-fixed-dim hover:underline transition-all focus:outline-none focus:ring-2 focus:ring-primary rounded" href="#">Sustainability Report</a></li>
+</ul>
+</div>
+</footer>
+</body></html>
