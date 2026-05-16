@@ -1,0 +1,15 @@
+{
+  "name": "ecovalue-workspace",
+  "version": "1.0.0",
+  "description": "Root workspace for EcoValue Hackathon project",
+  "scripts": {
+    "dev:frontend": "cd frontend && npm run dev",
+    "dev:backend": "cd backend && python -m uvicorn main:app --reload",
+    "dev": "npx concurrently \"npm run dev:frontend\" \"npm run dev:backend\"",
+    "seed": "cd backend && python seed.py",
+    "install:all": "cd frontend && npm install"
+  },
+  "devDependencies": {
+    "concurrently": "^8.2.2"
+  }
+}

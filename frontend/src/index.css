@@ -7,16 +7,76 @@
 
 @layer base {
   :root {
+    --primary: #9a442d;
+    --on-primary: #ffffff;
+    --app-bg: #FAF9F6;
+    --surface-card: #FFFFFF;
+    --on-background: #161a32;
+    --on-surface: #161a32;
+    --text-secondary: #6B7280;
+    --border-subtle: #E2E8F0;
+    --surface-muted: #F4F3F0;
+    --primary-container: #e07a5f;
+    --on-primary-container: #5b1604;
+    --status-success: #81B29A;
+    --status-error: #E63946;
+    --inverse-surface: #2b2e48;
+    --inverse-on-surface: #f1efff;
+
     --border: 236 20% 88%;
     --input: 236 20% 88%;
     --ring: 13 67% 62%;
     --foreground: 236 20% 29%;
+
+    --base-font-size: 16px;
   }
+
+  [data-theme='dark'] {
+    --primary: #ffb4a1;
+    --on-primary: #5b1604;
+    --app-bg: #121212;
+    --surface-card: #1e1e1e;
+    --on-background: #FAF9F6;
+    --on-surface: #FAF9F6;
+    --text-secondary: #9CA3AF;
+    --border-subtle: #333333;
+    --surface-muted: #2a2a2a;
+    --primary-container: #7c2e19;
+    --on-primary-container: #ffdbd2;
+    --status-success: #4ade80;
+    --status-error: #f87171;
+    --inverse-surface: #fbf8ff;
+    --inverse-on-surface: #161a32;
+  }
+
+  /* Text Sizes */
+  [data-text-size='small'] { font-size: 14px; }
+  [data-text-size='medium'] { font-size: 16px; }
+  [data-text-size='large'] { font-size: 18px; }
+
+  /* Accessibility: Color Blindness Filters */
+  [data-color-blind='protanopia'] { filter: saturate(0.8) hue-rotate(-10deg); }
+  [data-color-blind='deuteranopia'] { filter: saturate(0.8) hue-rotate(10deg); }
+  [data-color-blind='tritanopia'] { filter: saturate(0.8) hue-rotate(180deg); }
+  
+  [data-high-contrast='true'] {
+    --primary: #000000;
+    --on-primary: #ffffff;
+    --app-bg: #ffffff;
+    --surface-card: #ffffff;
+    --on-background: #000000;
+    --on-surface: #000000;
+    --border-subtle: #000000;
+    --text-secondary: #000000;
+    --outline: #000000;
+  }
+
   * {
     @apply border-border-subtle;
   }
   body {
-    @apply bg-app-bg text-on-background antialiased;
+    @apply bg-app-bg text-on-background antialiased transition-colors duration-300;
+    font-size: var(--base-font-size);
     font-feature-settings: "rlig" 1, "calt" 1;
   }
   h1, h2, h3, h4, h5, h6 {

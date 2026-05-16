@@ -21,6 +21,7 @@ const Login = () => {
       localStorage.setItem('auth', 'true');
       localStorage.setItem('token', data.access_token);
       localStorage.setItem('role', data.user.role);
+      localStorage.setItem('userId', data.user.id);
       window.dispatchEvent(new Event('auth-change'));
       navigate(data.user.role === 'admin' ? '/admin' : '/feed');
     } catch (err) {

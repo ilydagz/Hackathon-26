@@ -1,23 +1,38 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
+import { useNotifications } from '../../context/NotificationContext';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
+  const [filteredUsers, setFilteredUsers] = useState([]);
+  const [search, setSearch] = useState('');
   const [loading, setLoading] = useState(true);
+  const { addNotification } = useNotifications();
+  const currentUserId = Number(localStorage.getItem('userId'));
+
+  const fetchUsers = async () => {
+    try {
+      const data = await api.getUsers();
+      setUsers(data);
+      setFilteredUsers(data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchUsers = async () => {
-      try {
-        const data = await api.getUsers();
-        setUsers(data);
-      } catch (err) {
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
     fetchUsers();
   }, []);
+
+  useEffect(() => {
+    const results = users.filter(user => 
+      user.name.toLowerCase().includes(search.toLowerCase()) ||
+      user.email.toLowerCase().includes(search.toLowerCase())
+    );
+    setFilteredUsers(results);
+  }, [search, users]);
 
   const toggleStatus = async (id, currentStatus) => {
     const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
@@ -25,8 +40,19 @@ const AdminUsers = () => {
       try {
         const updatedUser = await api.toggleUserStatus(id);
         setUsers(users.map(u => u.id === id ? updatedUser : u));
+        addNotification({
+          titleKey: 'notif.profileUpdated',
+          messageKey: 'nav.profile',
+          type: 'system',
+          userId: currentUserId
+        });
       } catch (err) {
-        alert('Failed to update user status');
+        addNotification({
+          titleKey: 'profile.error',
+          messageKey: 'profile.error',
+          type: 'system',
+          userId: currentUserId
+        });
       }
     }
   };
@@ -36,9 +62,19 @@ const AdminUsers = () => {
       try {
         await api.deleteUser(id);
         setUsers(users.filter(u => u.id !== id));
-        alert(`User ${id} deactivated.`);
+        addNotification({
+          titleKey: 'notif.accountDeleted',
+          messageKey: 'nav.signOut',
+          type: 'system',
+          userId: currentUserId
+        });
       } catch (err) {
-        alert('Failed to delete user');
+        addNotification({
+          titleKey: 'profile.error',
+          messageKey: 'profile.error',
+          type: 'system',
+          userId: currentUserId
+        });
       }
     }
   };
@@ -51,7 +87,13 @@ const AdminUsers = () => {
         <h1 className="font-display-lg md:text-display-lg text-on-background">User Management</h1>
         <div className="bg-surface-muted rounded-lg px-4 py-2 border border-border-subtle flex items-center gap-2 text-on-surface-variant font-body-main">
           <span className="material-symbols-outlined text-[20px]">search</span>
-          <input type="text" placeholder="Search users..." className="bg-transparent border-none focus:ring-0 outline-none w-48" />
+          <input 
+            type="text" 
+            placeholder="Search users..." 
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+            className="bg-transparent border-none focus:ring-0 outline-none w-48" 
+          />
         </div>
       </div>
 
@@ -70,7 +112,7 @@ const AdminUsers = () => {
               </tr>
             </thead>
             <tbody className="font-body-main text-body-main text-on-surface">
-              {users.map(user => (
+              {filteredUsers.map(user => (
                 <tr key={user.id} className="border-b border-border-subtle hover:bg-surface-muted transition-colors">
                   <td className="p-4 font-title-card text-title-card">{user.id}</td>
                   <td className="p-4 font-bold">{user.name}</td>
@@ -103,7 +145,7 @@ const AdminUsers = () => {
             </tbody>
           </table>
         </div>
-        {users.length === 0 && (
+        {filteredUsers.length === 0 && (
           <div className="p-xl text-center text-text-secondary font-body-main">No users found.</div>
         )}
       </div>

@@ -110,7 +110,7 @@ def login(user: schemas.UserLogin, request: Request, db: Session = Depends(get_d
         raise HTTPException(status_code=401, detail="Invalid credentials")
         
     if db_user.status == "suspended":
-        log_action(db, "LOGIN", "FAILED", target=user.email, result="ACCOUNT_SUSPENDED", ip=request.client.host)
+        log_action(db, "LOGIN", "ACCOUNT_SUSPENDED", target=user.email, ip=request.client.host)
         raise HTTPException(status_code=403, detail="Account suspended")
 
     token = secrets.token_urlsafe(32)
@@ -143,6 +143,8 @@ def update_current_user_profile(user_update: schemas.UserBase, current_user: mod
     current_user.name = user_update.name
     # Email updates might require more logic, but for hackathon we'll allow it:
     current_user.email = user_update.email
+    current_user.location = user_update.location
+    current_user.bio = user_update.bio
     db.commit()
     db.refresh(current_user)
     return current_user
@@ -179,9 +181,32 @@ def delete_user(user_id: int, request: Request, admin: models.User = Depends(get
 # --- LISTING ENDPOINTS ---
 
 @app.get("/api/listings", response_model=List[schemas.ListingResponse])
-def get_listings(db: Session = Depends(get_db)):
-    # Only return active listings, sorted by newest
-    return db.query(models.Listing).filter(models.Listing.status == "active").order_by(desc(models.Listing.created_at)).all()
+def get_listings(category: Optional[str] = None, subcategory: Optional[str] = None, search: Optional[str] = None, db: Session = Depends(get_db)):
+    query = db.query(models.Listing).filter(models.Listing.status == "active")
+    
+    if category and category != "all":
+        # Check if matches category OR subcategory
+        query = query.filter((models.Listing.category == category) | (models.Listing.subcategory == category))
+    
+    if subcategory:
+        query = query.filter(models.Listing.subcategory == subcategory)
+    
+    if search:
+        query = query.filter(
+            (models.Listing.title.ilike(f"%{search}%")) | 
+            (models.Listing.description.ilike(f"%{search}%")) |
+            (models.Listing.category.ilike(f"%{search}%")) |
+            (models.Listing.subcategory.ilike(f"%{search}%"))
+        )
+        
+    return query.order_by(desc(models.Listing.created_at)).all()
+
+@app.get("/api/listings/drafts", response_model=List[schemas.ListingResponse])
+def get_drafts(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    return db.query(models.Listing).filter(
+        models.Listing.author_id == current_user.id,
+        models.Listing.status == "draft"
+    ).all()
 
 @app.get("/api/admin/listings", response_model=List[schemas.ListingResponse])
 def get_admin_listings(admin: models.User = Depends(get_admin_user), db: Session = Depends(get_db)):
@@ -195,6 +220,35 @@ def create_listing(listing: schemas.ListingCreate, request: Request, current_use
     db.refresh(db_listing)
     
     log_action(db, "CREATE_POST", "SUCCESS", user_id=current_user.id, role=current_user.role, target=f"P{db_listing.id}", ip=request.client.host)
+    return db_listing
+
+@app.put("/api/listings/{listing_id}", response_model=schemas.ListingResponse)
+def update_listing(listing_id: int, listing_update: schemas.ListingUpdate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not db_listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if db_listing.author_id != current_user.id and current_user.role != "admin":
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    update_data = listing_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(db_listing, key, value)
+    
+    db.commit()
+    db.refresh(db_listing)
+    return db_listing
+
+@app.post("/api/listings/{listing_id}/sold", response_model=schemas.ListingResponse)
+def mark_as_sold(listing_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not db_listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if db_listing.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+    
+    db_listing.status = "sold"
+    db.commit()
+    db.refresh(db_listing)
     return db_listing
 
 @app.delete("/api/listings/{listing_id}")
@@ -212,6 +266,49 @@ def delete_listing(listing_id: int, request: Request, current_user: models.User 
     
     log_action(db, "DELETE_POST", "SUCCESS", user_id=current_user.id, role=current_user.role, target=f"P{listing.id}", ip=request.client.host)
     return {"message": "Listing deleted"}
+
+# --- MESSAGE ENDPOINTS ---
+
+@app.get("/api/messages/{listing_id}", response_model=List[schemas.MessageResponse])
+def get_messages(listing_id: int, other_user_id: Optional[int] = None, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    query = db.query(models.Message).filter(models.Message.listing_id == listing_id)
+    
+    if other_user_id:
+        query = query.filter(
+            ((models.Message.sender_id == current_user.id) & (models.Message.receiver_id == other_user_id)) |
+            ((models.Message.sender_id == other_user_id) & (models.Message.receiver_id == current_user.id))
+        )
+    else:
+        query = query.filter(
+            (models.Message.sender_id == current_user.id) | (models.Message.receiver_id == current_user.id)
+        )
+        
+    return query.order_by(models.Message.timestamp).all()
+
+@app.post("/api/messages", response_model=schemas.MessageResponse)
+def send_message(message: schemas.MessageCreate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    db_message = models.Message(**message.dict(), sender_id=current_user.id)
+    db.add(db_message)
+    db.commit()
+    db.refresh(db_message)
+    return db_message
+
+@app.get("/api/chats", response_model=List[schemas.MessageResponse])
+def get_chats(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    # Very simple: get last message for each unique (listing_id, sender/receiver pair)
+    # In a real app, this would be more complex
+    all_msgs = db.query(models.Message).filter(
+        (models.Message.sender_id == current_user.id) | (models.Message.receiver_id == current_user.id)
+    ).order_by(desc(models.Message.timestamp)).all()
+    
+    seen_pairs = set()
+    latest_msgs = []
+    for m in all_msgs:
+        pair = tuple(sorted([m.sender_id, m.receiver_id])) + (m.listing_id,)
+        if pair not in seen_pairs:
+            seen_pairs.add(pair)
+            latest_msgs.append(m)
+    return latest_msgs
 
 
 # --- LOG ENDPOINTS ---

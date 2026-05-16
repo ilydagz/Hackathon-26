@@ -8,6 +8,8 @@ import Profile from './pages/Profile';
 import Login from './pages/Login';
 import Register from './pages/Register';
 import InfoPage from './pages/InfoPage';
+import MyListings from './pages/MyListings';
+import Favorites from './pages/Favorites';
 import AdminLayout from './pages/admin/AdminLayout';
 import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminPosts from './pages/admin/AdminPosts';
@@ -60,7 +62,7 @@ function App() {
       <div className="min-h-screen bg-app-bg text-on-background flex flex-col font-body-main antialiased selection:bg-primary-container selection:text-on-primary-container">
         {/* Only show global Navbar for authenticated users who are NOT admins */}
         {isAuthenticated && userRole !== 'admin' && <Navbar />}
-        <main className="flex-grow flex flex-col">
+        <main className={`flex-grow flex flex-col ${isAuthenticated && userRole !== 'admin' ? 'pt-20' : ''}`}>
           <Routes>
             {/* Unauthenticated Routes */}
             {!isAuthenticated ? (
@@ -94,12 +96,13 @@ function App() {
                     <Route path="/feed" element={<Feed />} />
                     <Route path="/messages" element={<Chat />} />
                     <Route path="/profile" element={<Profile />} />
+                    <Route path="/my-posts" element={<MyListings />} />
+                    <Route path="/favorites" element={<Favorites />} />
                     <Route path="/info/:topic" element={<InfoPage />} />
-                    
-                    <Route path="/" element={<Navigate to="/feed" replace />} />
                     <Route path="/login" element={<Navigate to="/feed" replace />} />
                     <Route path="/register" element={<Navigate to="/feed" replace />} />
                     <Route path="/admin/*" element={<Navigate to="/feed" replace />} />
+                    <Route path="/" element={<Navigate to="/feed" replace />} />
                     <Route path="*" element={<Navigate to="/feed" replace />} />
                   </>
                 )}

@@ -14,7 +14,7 @@ const AdminLayout = () => {
   ];
 
   return (
-    <div className="flex h-[calc(100vh-80px)] bg-surface-container-lowest">
+    <div className="flex h-screen bg-surface-container-lowest">
       {/* Sidebar */}
       <aside className="w-64 bg-surface-card border-r border-border-subtle flex flex-col shrink-0">
         <div className="p-lg border-b border-border-subtle">

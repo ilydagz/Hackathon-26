@@ -1,10 +1,13 @@
 import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
+import { api } from '../api';
 
 const Landing = () => {
   const { t, lang, toggleLanguage } = useLanguage();
   const [activeSection, setActiveSection] = useState('hero');
+  const [listings, setListings] = useState([]);
+  const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const observer = new IntersectionObserver(
@@ -20,6 +23,18 @@ const Landing = () => {
 
     const sections = document.querySelectorAll('section');
     sections.forEach((s) => observer.observe(s));
+
+    const fetchListings = async () => {
+      try {
+        const data = await api.getListings();
+        setListings(data.slice(0, 4)); // Only show first 4 for preview
+      } catch (err) {
+        console.error("Failed to fetch listings", err);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchListings();
 
     return () => observer.disconnect();
   }, []);
@@ -190,7 +205,7 @@ const Landing = () => {
             </div>
             <div className="flex justify-center mt-12">
               <button onClick={() => scrollTo('marketplace')} className="text-primary hover:text-primary-fixed-dim transition-colors flex items-center gap-1 font-bold">
-                See marketplace <span className="material-symbols-outlined">expand_more</span>
+                {t('action.seeMarketplace')} <span className="material-symbols-outlined">expand_more</span>
               </button>
             </div>
           </div>
@@ -209,65 +224,40 @@ const Landing = () => {
             </Link>
           </div>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-md md:gap-lg">
-            <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col">
-              <div className="relative aspect-square w-full bg-surface-muted overflow-hidden">
-                <img alt="Headphones" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBK9I_pnd5yehuc4RU_FZySByCAZjQBrrv-EKHM2bDtzNof2k9K1qUGsiKvVjQj-yncfXcb29pcIE5TsjAFv5HRRL5Or-eDCs6pKMPrX0bWk0t4Gim9bb84f_W78BEUSyv0csL2LQGTqxj6vM0EdFmpHfZEU1UEiO_FkzlUEEz-vGyymlVccYfPcxNfqr1vepr3BjKKYL72wngMIePekG1UHOIBOxaYHKMBdyVqSbw70NH0vufXRPfJztSKHf0ojma_1ymPuvGp8SY" />
-              </div>
-              <div className="p-sm md:p-md flex flex-col flex-grow">
-                <div className="font-headline-md text-headline-md text-on-background mb-xs">$120</div>
-                <h3 className="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Sony WH-1000XM4</h3>
-                <div className="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
-                  <span className="material-symbols-outlined text-status-success text-[16px]" style={{fontVariationSettings: "'FILL' 1"}}>verified</span>
-                  <span className="font-body-sm text-body-sm text-text-secondary truncate">{t('preview.verified')} • 2mi</span>
+            {loading ? (
+              [...Array(4)].map((_, i) => (
+                <div key={i} className="bg-surface-card rounded-xl border border-border-subtle aspect-square animate-pulse"></div>
+              ))
+            ) : (
+              listings.map((listing) => (
+                <div key={listing.id} className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col">
+                  <div className="relative aspect-square w-full bg-surface-muted overflow-hidden">
+                    <img 
+                      alt={listing.title} 
+                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
+                      src={`http://localhost:8000/static/images/${listing.image_url}`} 
+                    />
+                  </div>
+                  <div className="p-sm md:p-md flex flex-col flex-grow">
+                    <div className="font-headline-md text-headline-md text-on-background mb-xs">₺{listing.selected_price}</div>
+                    <h3 className="font-body-main text-body-main text-on-surface-variant truncate mb-xs">{listing.title}</h3>
+                    <div className="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
+                      <span className="material-symbols-outlined text-status-success text-[16px]" style={{fontVariationSettings: "'FILL' 1"}}>verified</span>
+                      <span className="font-body-sm text-body-sm text-text-secondary truncate">
+                        {listing.author ? listing.author.name : t('preview.verified')}
+                      </span>
+                    </div>
+                  </div>
                 </div>
-              </div>
-            </div>
-            <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col">
-              <div className="relative aspect-square w-full bg-surface-muted overflow-hidden">
-                <img alt="Headphones" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuBw1ZMSefBF9HSu7ZAtkZmBeK6NdLMGifkc8hN3JCqrQ66_UHbzGDoUD0kA8zy7p-3IS2T8m4tDwFrD89LVjgAd_Nh55kSfwxKTOpl-G9xiBQ8jN6V7n8odzH4R3zdbKcNJFBCCje15evTf8mLr5jfdV7jisYKUKO1cvypYDV0g0x7w4bPvr1DKel5b0xe7i4nbWPOhRYL80G6_Mo8jPpb5jbFpIZ29g1Ix_GzxHUnrOrkU-y4ZIsrkFXGu8kR9pXgV5Yp4ohUm6Qs" />
-              </div>
-              <div className="p-sm md:p-md flex flex-col flex-grow">
-                <div className="font-headline-md text-headline-md text-on-background mb-xs">$85</div>
-                <h3 className="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Premium Wireless Audio</h3>
-                <div className="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
-                  <span className="material-symbols-outlined text-outline text-[16px]">location_on</span>
-                  <span className="font-body-sm text-body-sm text-text-secondary truncate">Downtown • 4mi</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col hidden md:flex">
-              <div className="relative aspect-square w-full bg-surface-muted overflow-hidden">
-                <img alt="Watch" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCcs-_UBSZbYVwVmvYzoW5TyHBykVmovUkFTLFE-nG-c_wnBbU4RYCEwXMrDcbBfzWb2UDCl5I1MgkVLlAHvbUmHGiB26PeHmbC0du31mydOXCIi-psPXq7ehad_SiP18Y7gIauIrX91hDBDtb28ZfJ1kZ-oFuXS_eEtti7Pbn8Gc545L54LYFF8yKnGcCbuo6OoTSH6Xg0LLOhSWQYbwHpS8QXCOZ3ZTGv_16HK9_psRqFa5jati616ItNcspG44m7akQn5JXDwt0" />
-              </div>
-              <div className="p-sm md:p-md flex flex-col flex-grow">
-                <div className="font-headline-md text-headline-md text-on-background mb-xs">$150</div>
-                <h3 className="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Smartwatch Gen 5</h3>
-                <div className="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
-                  <span className="material-symbols-outlined text-status-success text-[16px]" style={{fontVariationSettings: "'FILL' 1"}}>verified</span>
-                  <span className="font-body-sm text-body-sm text-text-secondary truncate">{t('preview.topSeller')} • 1mi</span>
-                </div>
-              </div>
-            </div>
-            <div className="bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group flex flex-col hidden md:flex">
-              <div className="relative aspect-square w-full bg-surface-muted overflow-hidden">
-                <img alt="Coffee Maker" className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" src="https://lh3.googleusercontent.com/aida-public/AB6AXuCT9zqLo-C1ZhTRh6mW506C8AV2gqWf0LypFG1Npuow5k8scTtzsGWvzrMYEZ50q6ZVF70iSOUg3xuzvPuBPUn7z3g5KQwMExTsWrvcuRDOvxZOqBzK_8ik-rG_iEPR-T1yVDsGrO0rn9ZJ3CNJ-42FXKKWCZClo8mWZCij3fl_8zxFx1zrQ1ryIa_v_yMEMdgrcqr-we9Pg4dTCsUv9ccAg-p-9kkLdLb7gQHpTZgeGrRBCnLR8Jjbt2zTNJo5HUQKHlwN_QYuZKs" />
-              </div>
-              <div className="p-sm md:p-md flex flex-col flex-grow">
-                <div className="font-headline-md text-headline-md text-on-background mb-xs">$220</div>
-                <h3 className="font-body-main text-body-main text-on-surface-variant truncate mb-xs">Espresso Machine Pro</h3>
-                <div className="flex items-center gap-xs mt-auto pt-sm border-t border-border-subtle">
-                  <span className="material-symbols-outlined text-outline text-[16px]">location_on</span>
-                  <span className="font-body-sm text-body-sm text-text-secondary truncate">Westside • 5mi</span>
-                </div>
-              </div>
-            </div>
+              ))
+            )}
           </div>
           <Link className="md:hidden mt-lg w-full border border-outline text-secondary px-lg py-[14px] rounded-lg font-title-card text-title-card text-center hover:bg-surface-muted transition-colors flex items-center justify-center gap-xs" to="/feed">
             {t('preview.btnViewAll')}
           </Link>
           <div className="flex justify-center mt-8">
             <button onClick={() => scrollTo('trust')} className="text-primary hover:text-primary-fixed-dim transition-colors flex items-center gap-1 font-bold">
-              Why use AI? <span className="material-symbols-outlined">expand_more</span>
+              {t('action.whyAi')} <span className="material-symbols-outlined">expand_more</span>
             </button>
           </div>
         </section>
@@ -305,31 +295,31 @@ const Landing = () => {
               <div className="bg-surface-card rounded-2xl p-lg shadow-lg border border-border-subtle w-full max-w-md">
                 <div className="flex justify-between items-center mb-md border-b border-border-subtle pb-sm">
                   <h3 className="font-title-card text-title-card text-on-background">{t('trust.review')}</h3>
-                  <button className="text-primary hover:text-on-primary-fixed-variant font-label-caps text-label-caps">EDIT</button>
+                  <button className="text-primary hover:text-on-primary-fixed-variant font-label-caps text-label-caps">{t('action.edit')}</button>
                 </div>
                 <div className="space-y-md">
                   <div>
-                    <label className="font-label-caps text-label-caps text-text-secondary block mb-1">Title</label>
+                    <label className="font-label-caps text-label-caps text-text-secondary block mb-1">{t('ai.title')}</label>
                     <div className="w-full bg-surface-muted border border-border-subtle rounded p-2 font-body-main text-body-main text-on-background">
-                      Vintage Wooden Desk Chair
+                      {t('trust.draftTitle')}
                     </div>
                   </div>
                   <div>
-                    <label className="font-label-caps text-label-caps text-text-secondary block mb-1">Description</label>
+                    <label className="font-label-caps text-label-caps text-text-secondary block mb-1">{t('ai.description')}</label>
                     <div className="w-full bg-surface-muted border border-border-subtle rounded p-2 font-body-sm text-body-sm text-on-background h-24 overflow-y-auto">
-                      Mid-century style solid wood desk chair in excellent condition. Features curved back support and brass detailing on the legs. Perfect for a home office. Minor wear consistent with age.
+                      {t('trust.draftDesc')}
                     </div>
                   </div>
                   <div className="flex gap-md">
                     <div className="flex-1">
-                      <label className="font-label-caps text-label-caps text-text-secondary block mb-1">Condition</label>
+                      <label className="font-label-caps text-label-caps text-text-secondary block mb-1">{t('ai.condition')}</label>
                       <div className="w-full bg-surface-muted border border-border-subtle rounded p-2 font-body-main text-body-main text-on-background flex justify-between items-center">
-                        Good
+                        {t('trust.draftCondition')}
                         <span className="material-symbols-outlined text-[18px]">expand_more</span>
                       </div>
                     </div>
                     <div className="flex-1">
-                      <label className="font-label-caps text-label-caps text-text-secondary block mb-1">Price</label>
+                      <label className="font-label-caps text-label-caps text-text-secondary block mb-1">{t('phone.price')}</label>
                       <div className="w-full bg-surface-muted border border-primary rounded p-2 font-body-main text-body-main text-on-background font-bold flex items-center gap-1">
                         $ 85
                       </div>
@@ -341,7 +331,7 @@ const Landing = () => {
           </div>
           <div className="flex justify-center mt-12 w-full lg:hidden">
             <button onClick={() => scrollTo('cta')} className="text-primary hover:text-primary-fixed-dim transition-colors flex items-center gap-1 font-bold">
-              Start <span className="material-symbols-outlined">expand_more</span>
+              {t('action.start')} <span className="material-symbols-outlined">expand_more</span>
             </button>
           </div>
         </section>

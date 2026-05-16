@@ -42,8 +42,19 @@ export const api = {
   },
 
   // Listings
-  getListings: async () => {
-    const res = await fetch(`${API_URL}/listings`);
+  getListings: async (category = 'all', search = '') => {
+    const params = new URLSearchParams();
+    if (category !== 'all') params.append('category', category);
+    if (search) params.append('search', search);
+    const res = await fetch(`${API_URL}/listings?${params.toString()}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  getDrafts: async () => {
+    const res = await fetch(`${API_URL}/listings/drafts`, {
+      headers: getAuthHeaders()
+    });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
@@ -69,6 +80,25 @@ export const api = {
   deleteListing: async (id) => {
     const res = await fetch(`${API_URL}/listings/${id}`, {
       method: 'DELETE',
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  updateListing: async (id, listingData) => {
+    const res = await fetch(`${API_URL}/listings/${id}`, {
+      method: 'PUT',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(listingData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  markAsSold: async (id) => {
+    const res = await fetch(`${API_URL}/listings/${id}/sold`, {
+      method: 'POST',
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -128,5 +158,64 @@ export const api = {
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
+  },
+
+  // Messages
+  getChats: async () => {
+    const res = await fetch(`${API_URL}/chats`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  getMessages: async (listingId, otherUserId = null) => {
+    let url = `${API_URL}/messages/${listingId}`;
+    if (otherUserId) url += `?other_user_id=${otherUserId}`;
+    const res = await fetch(url, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  sendMessage: async (messageData) => {
+    const res = await fetch(`${API_URL}/messages`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(messageData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  // My Listings & Favorites (Frontend handled as backend is missing endpoints)
+  getMyListings: async () => {
+    const currentUserId = Number(localStorage.getItem('userId'));
+    const all = await api.getListings();
+    // In a real app, backend would filter. For hackathon, we filter frontend.
+    // Also include drafts
+    const drafts = await api.getDrafts();
+    const myActive = all.filter(l => l.author_id === currentUserId);
+    return [...drafts, ...myActive];
+  },
+
+  getFavorites: async () => {
+    const favIds = JSON.parse(localStorage.getItem('favorites') || '[]');
+    const all = await api.getListings();
+    return all.filter(l => favIds.includes(l.id));
+  },
+
+  toggleFavorite: async (id) => {
+    const nid = Number(id);
+    const favIds = JSON.parse(localStorage.getItem('favorites') || '[]');
+    const index = favIds.indexOf(nid);
+    if (index > -1) {
+      favIds.splice(index, 1);
+    } else {
+      favIds.push(nid);
+    }
+    localStorage.setItem('favorites', JSON.stringify(favIds));
+    return { success: true };
   }
 };

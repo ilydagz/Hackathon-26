@@ -1,0 +1,59 @@
+[
+  {
+    "id": "clothing",
+    "label": "Clothing",
+    "icon": "apparel",
+    "subcategories": [
+      { "id": "dress", "label": "Dress" },
+      { "id": "pants", "label": "Pants" },
+      { "id": "shirts", "label": "Shirts" },
+      { "id": "shoes", "label": "Shoes" },
+      { "id": "accessories", "label": "Accessories" }
+    ]
+  },
+  {
+    "id": "electronics",
+    "label": "Electronics",
+    "icon": "devices",
+    "subcategories": [
+      { "id": "phones", "label": "Phones" },
+      { "id": "laptops", "label": "Laptops" },
+      { "id": "audio", "label": "Audio" },
+      { "id": "cameras", "label": "Cameras" },
+      { "id": "gaming", "label": "Gaming" }
+    ]
+  },
+  {
+    "id": "furniture",
+    "label": "Furniture",
+    "icon": "chair",
+    "subcategories": [
+      { "id": "tables", "label": "Tables" },
+      { "id": "chairs", "label": "Chairs" },
+      { "id": "sofas", "label": "Sofas" },
+      { "id": "beds", "label": "Beds" },
+      { "id": "storage", "label": "Storage" }
+    ]
+  },
+  {
+    "id": "decor",
+    "label": "Decor",
+    "icon": "auto_awesome_motion",
+    "subcategories": [
+      { "id": "lighting", "label": "Lighting" },
+      { "id": "wall_art", "label": "Wall Art" },
+      { "id": "rugs", "label": "Rugs" },
+      { "id": "vases", "label": "Vases" }
+    ]
+  },
+  {
+    "id": "other",
+    "label": "Other",
+    "icon": "more_horiz",
+    "subcategories": [
+      { "id": "books", "label": "Books" },
+      { "id": "sports", "label": "Sports" },
+      { "id": "toys", "label": "Toys" }
+    ]
+  }
+]
