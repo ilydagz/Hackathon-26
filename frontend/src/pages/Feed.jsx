@@ -19,6 +19,7 @@ const Feed = () => {
   const [favorites, setFavorites] = useState(new Set());
   const [feedInsights, setFeedInsights] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
+  const [error, setError] = useState('');
   const searchTimerRef = useRef(null);
   const sentImpressionsRef = useRef(new Set());
 
@@ -48,6 +49,7 @@ const Feed = () => {
   useEffect(() => {
     const fetchFeed = async () => {
       setLoading(true);
+      setError('');
       try {
         const data = await api.getFeed(selectedCategory, search);
         const items = Array.isArray(data.items) ? data.items : [];
@@ -69,13 +71,9 @@ const Feed = () => {
         });
       } catch (error) {
         console.error('Error fetching feed:', error);
-        try {
-          const data = await api.getListings(selectedCategory, search);
-          setListings(data);
-          setFeedInsights(null);
-        } catch (fallbackError) {
-          console.error('Fallback feed load failed:', fallbackError);
-        }
+        setListings([]);
+        setFeedInsights(null);
+        setError(error?.response?.data?.detail || error.message || 'FeedScout is unavailable right now.');
       } finally {
         setLoading(false);
       }
@@ -330,6 +328,20 @@ const Feed = () => {
             {forYouListings.map((listing, index) => renderFeedCard(listing, index, true))}
           </div>
         </section>
+      )}
+
+      {error && !loading && (
+        <div className="mb-xl rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-amber-900">
+          <p className="font-title-card text-title-card">FeedScout needs AI access</p>
+          <p className="mt-1 text-sm">{error}</p>
+          <button
+            type="button"
+            onClick={() => setRefreshKey((value) => value + 1)}
+            className="mt-3 rounded-full bg-primary px-4 py-2 text-sm font-bold text-on-primary"
+          >
+            Retry
+          </button>
+        </div>
       )}
 
       {loading ? (

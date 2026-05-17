@@ -1,4 +1,5 @@
 import os
+import json
 import shutil
 import asyncio
 import hashlib
@@ -6,6 +7,8 @@ import math
 import secrets
 import uuid
 import re
+import urllib.error
+import urllib.request
 from collections import Counter
 from datetime import datetime
 from typing import List, Optional
@@ -36,6 +39,8 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "images")
 AVATAR_DIR = os.path.join(BASE_DIR, "static", "avatars")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
@@ -84,6 +89,62 @@ def delete_static_asset(asset_url: Optional[str]):
             os.remove(file_path)
         except OSError:
             pass
+
+def get_gemini_api_key() -> str:
+    api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise RuntimeError("Gemini API key is not configured")
+    return api_key
+
+def extract_gemini_text(response: dict) -> str:
+    candidates = response.get("candidates") or []
+    if not candidates:
+        raise RuntimeError("Gemini response missing candidates")
+    content = candidates[0].get("content") or {}
+    parts = content.get("parts") or []
+    if not parts:
+        raise RuntimeError("Gemini response missing parts")
+    text = parts[0].get("text") or ""
+    if not text.strip():
+        raise RuntimeError("Gemini response missing text")
+    return text
+
+def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> dict:
+    api_key = get_gemini_api_key()
+    request_payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {
+                        "text": f"{prompt}\n\nINPUT:\n{json.dumps(payload, ensure_ascii=False)}",
+                    }
+                ],
+            }
+        ],
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "temperature": temperature,
+        },
+    }
+
+    request = urllib.request.Request(
+        f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}",
+        data=json.dumps(request_payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    try:
+        with urllib.request.urlopen(request, timeout=90) as response:
+            body = response.read().decode("utf-8")
+        response_json = json.loads(body)
+        text = extract_gemini_text(response_json).strip()
+        if text.startswith("```"):
+            text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE | re.DOTALL).strip()
+        return json.loads(text)
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
+        raise RuntimeError("Gemini request failed") from exc
 
 
 def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], filename: str):
@@ -368,136 +429,177 @@ def build_feed_response(db: Session, current_user: Optional[models.User], catego
             (models.Listing.subcategory.ilike(f"%{search}%"))
         )
 
-    listings = query.order_by(desc(models.Listing.created_at)).all()
-    listings_by_id = {listing.id: listing for listing in listings}
+    listings = query.order_by(desc(models.Listing.created_at)).limit(80).all()
+    if not listings:
+        return {
+            "items": [],
+            "insights": {
+                "top_categories": [],
+                "preferred_price_range": None,
+                "summary": "No live listings available right now.",
+            },
+        }
 
-    events = []
+    recent_events = []
     if current_user:
-        events = db.query(models.FeedEvent).filter(models.FeedEvent.user_id == current_user.id).order_by(desc(models.FeedEvent.timestamp)).limit(400).all()
+        recent_events = db.query(models.FeedEvent).filter(
+            models.FeedEvent.user_id == current_user.id
+        ).order_by(desc(models.FeedEvent.timestamp)).limit(40).all()
 
-    global_popularity = Counter()
-    for listing_id, event_type in db.query(models.FeedEvent.listing_id, models.FeedEvent.event_type).filter(models.FeedEvent.listing_id.isnot(None)).all():
-        if listing_id:
-            global_popularity[listing_id] += 1 if event_type != "impression" else 0.3
-
-    profile = build_feed_profile(events, listings_by_id) if current_user else {
-        "category_scores": Counter(),
-        "query_tokens": Counter(),
-        "preferred_price": None,
-        "author_scores": Counter(),
-        "recent_terms": Counter(),
+    payload = {
+        "context": {
+            "category": category,
+            "search": search,
+            "current_user": {
+                "id": current_user.id if current_user else None,
+                "name": current_user.name if current_user else None,
+                "location": current_user.location if current_user else None,
+            },
+            "recent_events": [
+                {
+                    "event_type": event.event_type,
+                    "listing_id": event.listing_id,
+                    "category": event.category,
+                    "query": event.query,
+                    "timestamp": event.timestamp.isoformat() if event.timestamp else None,
+                }
+                for event in recent_events
+            ],
+        },
+        "listings": [
+            {
+                "id": listing.id,
+                "title": listing.title,
+                "description": (listing.description or "")[:220],
+                "selected_price": float(listing.selected_price or 0),
+                "category": listing.category,
+                "subcategory": listing.subcategory,
+                "condition": listing.condition,
+                "created_at": listing.created_at.isoformat() if listing.created_at else None,
+                "author_id": listing.author_id,
+                "author_name": listing.author.name if listing.author else None,
+                "price_strategy": listing.price_strategy,
+                "price_floor": listing.price_floor,
+                "price_ceiling": listing.price_ceiling,
+            }
+            for listing in listings
+        ],
     }
 
-    ranked = []
-    for listing in listings:
-        score, signals, badge, reason = score_listing(listing, profile, search, category, global_popularity)
-        ranked.append({
-            "listing": listing,
-            "score": round(score, 3),
-            "signals": signals,
-            "badge": badge,
-            "reason": reason,
+    prompt = (
+        "You are FeedScout, an AI marketplace ranking agent. "
+        "Rank the provided listings for the current user so the most relevant item appears first. "
+        "Use the user's recent events, current search, category, freshness, price fit, seller affinity, and general marketplace relevance. "
+        "Return valid JSON with this exact shape: "
+        "{"
+        '"items":[{"id":1,"feed_score":9.8,"feed_reason":"short reason","feed_badge":"optional badge","feed_signals":["signal 1","signal 2"]}],'
+        '"insights":{"top_categories":[{"name":"electronics","score":9.2}],"preferred_price_range":{"min":100,"max":150},"summary":"short summary"}'
+        "}."
+        " Include every listing exactly once, in the final ranking order, and do not add any extra keys."
+    )
+    response = call_gemini_json(prompt, payload, temperature=0.15)
+
+    ranked_items = response.get("items")
+    insights = response.get("insights") or {}
+    if not isinstance(ranked_items, list):
+        raise RuntimeError("FeedScout response missing ranked items")
+
+    listing_by_id = {listing.id: listing for listing in listings}
+    seen_ids = set()
+    items = []
+    for item in ranked_items:
+        listing_id = item.get("id")
+        if listing_id not in listing_by_id or listing_id in seen_ids:
+            continue
+        seen_ids.add(listing_id)
+        listing = listing_by_id[listing_id]
+        listing_payload = schemas.ListingResponse.model_validate(listing).model_dump()
+        items.append({
+            **listing_payload,
+            "feed_score": float(item.get("feed_score", 0)),
+            "feed_reason": str(item.get("feed_reason") or "AI ranked this item for you."),
+            "feed_badge": item.get("feed_badge"),
+            "feed_signals": item.get("feed_signals") if isinstance(item.get("feed_signals"), list) else [],
         })
 
-    ranked.sort(key=lambda item: (-item["score"], -item["listing"].created_at.timestamp(), item["listing"].id))
-
-    top_categories = []
-    for category_name, value in profile["category_scores"].most_common(4):
-        top_categories.append({"name": category_name, "score": round(float(value), 2)})
-
-    price_range = None
-    if profile["preferred_price"]:
-        preferred = profile["preferred_price"]
-        price_range = {
-            "min": round(preferred * 0.82),
-            "max": round(preferred * 1.18),
-        }
-
-    summary = "Showing fresh inventory first."
-    if current_user and top_categories:
-        summary = f"Learning from your recent activity: {top_categories[0]['name']} first."
-    elif current_user:
-        summary = "Mixing freshness, popularity, and current intent."
-
-    items = [
-        {
-            **schemas.ListingResponse.model_validate(item["listing"]).model_dump(),
-            "feed_score": item["score"],
-            "feed_reason": item["reason"],
-            "feed_badge": item["badge"],
-            "feed_signals": item["signals"],
-        }
-        for item in ranked
-    ]
+    if len(items) != len(listings):
+        raise RuntimeError("FeedScout did not rank every listing")
 
     return {
         "items": items,
         "insights": {
-            "top_categories": top_categories,
-            "preferred_price_range": price_range,
-            "summary": summary,
+            "top_categories": insights.get("top_categories") if isinstance(insights.get("top_categories"), list) else [],
+            "preferred_price_range": insights.get("preferred_price_range"),
+            "summary": str(insights.get("summary") or "Ranked by live user intent and marketplace relevance."),
         },
     }
 
 def build_chat_assist(listing: models.Listing, messages: List[models.Message], current_user: models.User, other_user: models.User) -> dict:
-    last_buyer_message = next(
-        (
-            msg.content
-            for msg in reversed(messages)
-            if msg.sender_id == other_user.id
-        ),
-        "",
+    payload = {
+        "listing": {
+            "id": listing.id,
+            "title": listing.title,
+            "description": listing.description,
+            "selected_price": float(listing.selected_price or 0),
+            "category": listing.category,
+            "subcategory": listing.subcategory,
+            "condition": listing.condition,
+            "price_strategy": listing.price_strategy,
+            "price_floor": listing.price_floor,
+            "price_ceiling": listing.price_ceiling,
+            "price_rationale": listing.price_rationale,
+            "author_id": listing.author_id,
+            "author_name": listing.author.name if listing.author else None,
+        },
+        "current_user": {
+            "id": current_user.id,
+            "name": current_user.name,
+            "role": current_user.role,
+        },
+        "other_user": {
+            "id": other_user.id,
+            "name": other_user.name,
+        },
+        "messages": [
+            {
+                "sender_id": msg.sender_id,
+                "receiver_id": msg.receiver_id,
+                "content": msg.content,
+                "timestamp": msg.timestamp.isoformat() if msg.timestamp else None,
+            }
+            for msg in messages[-12:]
+        ],
+    }
+
+    prompt = (
+        "You are Chat Copilot for a marketplace conversation. "
+        "Read the listing and the conversation history, then write the next best reply guidance for the current user. "
+        "Return valid JSON with this exact shape: "
+        "{"
+        '"tone_label":"short tone label",'
+        '"summary":"one-sentence guidance",'
+        '"suggestions":[{"label":"short label","text":"reply text"},{"label":"short label","text":"reply text"},{"label":"short label","text":"reply text"}]'
+        "}."
+        " Keep the response practical, natural, and grounded in the conversation. "
+        "Do not mention that you are an AI."
     )
-    listing_price = listing.selected_price or 0
-    tone_label = "Friendly"
-    summary = f"Item: {listing.title}. Asking ₺{int(listing_price)}."
-
-    lowered = (last_buyer_message or "").lower()
-    if any(word in lowered for word in ["lowest", "best price", "discount", "cheaper", "less"]):
-        tone_label = "Price push"
-        summary = "Buyer asks for lower price. Keep room for negotiation."
-        suggestions = [
-            {"label": "Counter", "text": f"I can do ₺{int(max(listing_price * 0.95, listing_price - 50))} if you can pick up today."},
-            {"label": "Firm", "text": f"Price is already fair at ₺{int(listing_price)}. Happy to keep it available for you."},
-            {"label": "Close", "text": "If that works for you, I can hold it until pickup time."},
-        ]
-    elif any(word in lowered for word in ["pickup", "pick up", "meet", "available", "today", "when"]):
-        tone_label = "Availability"
-        summary = "Buyer wants timing or pickup details."
-        suggestions = [
-            {"label": "Availability", "text": "Yes, I am available today after 6 PM."},
-            {"label": "Pickup", "text": "Pickup works best in a public place near me."},
-            {"label": "Confirm", "text": "Tell me what time works for you and I will confirm."},
-        ]
-    elif any(word in lowered for word in ["condition", "wear", "damage", "scratch", "photo"]):
-        tone_label = "Trust check"
-        summary = "Buyer wants more detail on condition."
-        suggestions = [
-            {"label": "Condition", "text": "Condition is as shown in photos, with normal second-hand wear."},
-            {"label": "Detail", "text": "I can share one more photo if you want a closer look."},
-            {"label": "Assure", "text": "Happy to answer anything else before you decide."},
-        ]
-    else:
-        tone_label = "Friendly"
-        summary = "Keep reply warm, short, and open-ended."
-        suggestions = [
-            {"label": "Warm reply", "text": f"Hi, thanks for your message about {listing.title}. How can I help?"},
-            {"label": "Ready", "text": "I am happy to answer questions or arrange pickup."},
-            {"label": "Next step", "text": "Let me know what works best for you."},
-        ]
-
-    if current_user.id != listing.author_id:
-        summary = "You are in buyer role. Keep reply simple and direct."
-        suggestions = [
-            {"label": "Ask", "text": f"Hi, is {listing.title} still available?"},
-            {"label": "Pickup", "text": "When could we meet for pickup?"},
-            {"label": "Offer", "text": f"Would you consider ₺{int(max(listing_price * 0.9, listing_price - 100))}?"},
-        ]
-
+    response = call_gemini_json(prompt, payload, temperature=0.3)
+    suggestions = response.get("suggestions")
+    if not isinstance(suggestions, list):
+        raise RuntimeError("ChatCopilot response missing suggestions")
+    if len(suggestions) < 3:
+        raise RuntimeError("ChatCopilot returned too few suggestions")
     return {
-        "tone_label": tone_label,
-        "summary": summary,
-        "suggestions": suggestions[:3],
+        "tone_label": str(response.get("tone_label") or "Helpful"),
+        "summary": str(response.get("summary") or "Use a clear, warm reply that moves the chat forward."),
+        "suggestions": [
+            {
+                "label": str(item.get("label") or "Reply"),
+                "text": str(item.get("text") or ""),
+            }
+            for item in suggestions[:3]
+            if isinstance(item, dict) and item.get("text")
+        ],
     }
 
 def log_feed_event(db: Session, current_user: Optional[models.User], event: schemas.FeedEventCreate):
@@ -701,7 +803,10 @@ def get_feed(
 ):
     category = normalize_category_filter(category)
     current_user = get_optional_user(authorization, db)
-    return build_feed_response(db, current_user, category, search)
+    try:
+        return build_feed_response(db, current_user, category, search)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
 @app.post("/api/feed/events")
 def create_feed_event(
@@ -845,8 +950,10 @@ def get_chat_assist(
         ((models.Message.sender_id == current_user.id) & (models.Message.receiver_id == other_user_id)) |
         ((models.Message.sender_id == other_user_id) & (models.Message.receiver_id == current_user.id))
     ).order_by(models.Message.timestamp).all()
-
-    return build_chat_assist(listing, messages, current_user, other_user)
+    try:
+        return build_chat_assist(listing, messages, current_user, other_user)
+    except RuntimeError as exc:
+        raise HTTPException(status_code=502, detail=str(exc))
 
 
 # --- LOG ENDPOINTS ---
@@ -856,7 +963,7 @@ def get_logs(admin: models.User = Depends(get_admin_user), db: Session = Depends
     return db.query(models.Log).order_by(desc(models.Log.timestamp)).all()
 
 
-# --- AI ENDPOINT (MOCKED) ---
+# --- AI ENDPOINT ---
 
 @app.post("/api/analyze", response_model=schemas.AnalysisJobResponse)
 async def analyze_image(

@@ -13,6 +13,7 @@ const Chat = () => {
   const [loading, setLoading] = useState(true);
   const [assist, setAssist] = useState(null);
   const [assistLoading, setAssistLoading] = useState(false);
+  const [assistError, setAssistError] = useState('');
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -58,6 +59,7 @@ const Chat = () => {
       let cancelled = false;
       const loadChat = async () => {
         setAssistLoading(true);
+        setAssistError('');
         try {
           const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
           const messageData = await api.getMessages(activeChat.listing_id, otherUserId);
@@ -78,6 +80,7 @@ const Chat = () => {
           console.error(err);
           if (!cancelled) {
             setAssist(null);
+            setAssistError(err?.response?.data?.detail || err.message || 'Chat Copilot is unavailable right now.');
           }
         }
 
@@ -250,6 +253,9 @@ const Chat = () => {
                 {assistLoading && (
                   <p className="text-sm text-text-secondary">{t('chat.assistLoading')}</p>
                 )}
+                {!assistLoading && assistError && (
+                  <p className="text-sm text-amber-700">{assistError}</p>
+                )}
                 {!assistLoading && assist?.summary && (
                   <p className="text-sm text-text-secondary mb-3">{assist.summary}</p>
                 )}
@@ -267,7 +273,7 @@ const Chat = () => {
                       </button>
                     ))}
                   </div>
-                ) : !assistLoading ? (
+                ) : !assistLoading && !assistError ? (
                   <p className="text-sm text-text-secondary">{t('chat.assistEmpty')}</p>
                 ) : null}
               </div>
