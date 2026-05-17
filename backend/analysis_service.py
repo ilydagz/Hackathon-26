@@ -1,6 +1,9 @@
 import os
 from typing import Optional, Literal
 from pydantic import BaseModel, Field
+from dotenv import load_dotenv
+
+load_dotenv()
 
 
 class SuggestedAttributes(BaseModel):

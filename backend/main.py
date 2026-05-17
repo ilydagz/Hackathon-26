@@ -9,6 +9,7 @@ import re
 from collections import Counter
 from datetime import datetime
 from typing import List, Optional
+from dotenv import load_dotenv
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Header, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
@@ -21,6 +22,7 @@ from analysis_service import analyze_listing_image
 from database import engine, get_db, SessionLocal
 
 # Create database tables
+load_dotenv()
 models.Base.metadata.create_all(bind=engine)
 
 app = FastAPI(title="EcoValue Marketplace API")
