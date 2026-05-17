@@ -121,6 +121,9 @@ class AIAnalysisResponse(BaseModel):
     condition: str
     confidence: float
     needs_more_photos: bool = False
+    retake_recommended: bool = False
+    image_quality: str = "good"
+    quality_note: Optional[str] = None
     rationale: str
     suggested_attributes: Optional[dict] = None
 

@@ -18,6 +18,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const [analysisStatus, setAnalysisStatus] = useState('');
   const [drafts, setDrafts] = useState([]);
   const [selectedDraftId, setSelectedDraftId] = useState(null);
+  const [publishConfirmed, setPublishConfirmed] = useState(false);
   
   // Draft State
   const [draftTitle, setDraftTitle] = useState('');
@@ -58,11 +59,13 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
     setAnalyzing(true);
     setAnalysisError('');
     setAnalysisStatus('queued');
+    setPublishConfirmed(false);
     setStep(2);
     try {
       const data = await api.analyzeListing(file);
-      setAnalysisJobId(data.job_id);
-      pollAnalysisJob(data.job_id);
+      const jobId = data.job_id || data.id;
+      setAnalysisJobId(jobId);
+      pollAnalysisJob(jobId);
     } catch (err) {
       console.error(err);
       setAnalysisError('Analysis failed. Try another photo or retry upload.');
@@ -82,6 +85,9 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
       condition: parsed.condition,
       confidence: parsed.confidence,
       needs_more_photos: parsed.needs_more_photos,
+      retake_recommended: parsed.retake_recommended,
+      image_quality: parsed.image_quality,
+      quality_note: parsed.quality_note,
       rationale: parsed.rationale,
       suggested_attributes: parsed.suggested_attributes || {}
     });
@@ -92,7 +98,13 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
     setAttributes(parsed.suggested_attributes || {});
     setSelectedPrice('quick');
     setCustomPrice('');
-    setStep(3);
+    const needsRetake = parsed.retake_recommended || parsed.needs_more_photos || parsed.image_quality === 'poor';
+    setAnalysisStatus(needsRetake ? 'needs_review' : 'completed');
+    if (!needsRetake) {
+      setStep(3);
+    } else {
+      setStep(2);
+    }
   };
 
   const pollAnalysisJob = (jobId) => {
@@ -353,12 +365,40 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                 </div>
                 <div className="text-center">
                   <p className="font-title-card text-title-card text-on-surface">
-                    {analysisStatus === 'queued' ? 'Queued' : analysisStatus === 'processing' ? 'Analyzing' : 'Waiting'}
+                    {analysisStatus === 'queued' ? 'Queued' : analysisStatus === 'processing' ? 'Analyzing' : analysisStatus === 'needs_review' ? 'Retake recommended' : 'Waiting'}
                   </p>
                   {analysisJobId && (
                     <p className="font-body-sm text-body-sm text-text-secondary mt-2">Job #{analysisJobId}</p>
                   )}
                 </div>
+                {analysisStatus === 'needs_review' && aiData && (
+                  <div className="mt-8 rounded-2xl border border-border-subtle bg-surface-card p-lg space-y-md">
+                    <div>
+                      <p className="font-title-card text-title-card text-on-surface">Photo quality gate</p>
+                      <p className="font-body-sm text-body-sm text-text-secondary mt-1">{aiData.quality_note}</p>
+                    </div>
+                    <div className="grid grid-cols-2 gap-sm">
+                      <button
+                        onClick={() => {
+                          setAnalysisStatus('completed');
+                          setStep(3);
+                        }}
+                        className="bg-surface-card border border-border-subtle rounded-xl py-3 font-title-card text-title-card text-on-surface"
+                      >
+                        Continue anyway
+                      </button>
+                      <button
+                        onClick={() => {
+                          setStep(1);
+                          setAnalysisStatus('');
+                        }}
+                        className="bg-primary text-on-primary rounded-xl py-3 font-title-card text-title-card"
+                      >
+                        Retake photo
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
 
@@ -533,6 +573,17 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
               <>
                 <main className="flex-1 px-margin-mobile py-lg pb-12 overflow-y-auto flex flex-col gap-lg animate-in slide-in-from-right duration-300 custom-scrollbar">
                    <h2 className="font-display-lg-mobile text-display-lg-mobile text-on-surface">{t('ai.pickPrice')}</h2>
+                   <div className="rounded-2xl border border-border-subtle bg-surface-card p-md space-y-sm">
+                     <div className="flex items-center justify-between gap-md">
+                       <span className="font-title-card text-title-card text-on-surface">Publish summary</span>
+                       <span className="font-body-sm text-body-sm text-text-secondary">{Math.round((aiData.confidence || 0) * 100)}% confidence</span>
+                     </div>
+                     <p className="font-body-sm text-body-sm text-text-secondary line-clamp-2">{draftTitle}</p>
+                     <p className="font-body-sm text-body-sm text-text-secondary">Reason: {aiData.rationale}</p>
+                     {aiData.quality_note && (
+                       <p className="font-body-sm text-body-sm text-amber-700">Photo quality: {aiData.quality_note}</p>
+                     )}
+                   </div>
                    <div className="flex flex-col gap-md">
                     <button onClick={() => setSelectedPrice('quick')} className={`p-md rounded-xl border-2 text-left ${selectedPrice === 'quick' ? 'border-primary' : 'border-border-subtle'}`}>
                       <p className="font-title-card">{t('ai.quickSale')}</p>
@@ -560,9 +611,20 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                        className="w-full bg-surface-card border border-border-subtle rounded-lg px-4 py-3 font-body-main text-body-main text-on-surface focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                      />
                    </div>
+                   <label className="flex items-start gap-sm rounded-2xl border border-border-subtle bg-surface-card p-md">
+                     <input
+                       type="checkbox"
+                       checked={publishConfirmed}
+                       onChange={e => setPublishConfirmed(e.target.checked)}
+                       className="mt-1"
+                     />
+                     <span className="font-body-sm text-body-sm text-on-surface">
+                       I reviewed title, price, and description. Publish only with my confirmation.
+                     </span>
+                   </label>
                 </main>
                 <footer className="shrink-0 bg-surface-container-lowest border-t border-border-subtle p-margin-mobile pb-8">
-                  <button onClick={handlePublish} disabled={publishing} className="w-full bg-primary text-on-primary font-title-card py-4 rounded-full">
+                  <button onClick={handlePublish} disabled={publishing || !publishConfirmed} className="w-full bg-primary text-on-primary font-title-card py-4 rounded-full disabled:opacity-50">
                     {publishing ? '...' : t('ai.publishListing')}
                   </button>
                 </footer>

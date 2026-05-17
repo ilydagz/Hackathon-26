@@ -14,6 +14,10 @@ const Create = () => {
   const [aiData, setAiData] = useState(null);
   const [selectedPrice, setSelectedPrice] = useState(null);
   const [loadingText, setLoadingText] = useState("EcoValue Agents analyzing...");
+  const [analysisJobId, setAnalysisJobId] = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState('');
+  const [analysisError, setAnalysisError] = useState('');
+  const [publishConfirmed, setPublishConfirmed] = useState(false);
 
   const loadingPhrases = [
     "Identifying your item...",
@@ -37,6 +41,9 @@ const Create = () => {
 
   const handleAnalyze = async (file) => {
     setStatus('analyzing');
+    setAnalysisError('');
+    setAnalysisStatus('queued');
+    setPublishConfirmed(false);
     let phraseIndex = 0;
     const interval = setInterval(() => {
       phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
@@ -45,24 +52,81 @@ const Create = () => {
     
     try {
       const data = await api.analyzeListing(file);
-      setAiData({
-        title: data.title,
-        description: data.description,
-        quick_price: data.quick_price,
-        market_price: data.market_price
-      });
-      setSelectedPrice(data.quick_price);
-      setStatus('results');
+      const jobId = data.job_id || data.id;
+      setAnalysisJobId(jobId);
+      pollAnalysisJob(jobId);
     } catch (error) {
       console.error('Analysis failed:', error);
+      setAnalysisError('Analysis failed. Try another photo or retry upload.');
       setStatus('idle');
     } finally {
       clearInterval(interval);
     }
   };
 
+  const applyAnalysisResult = (parsed) => {
+    setAiData({
+      title: parsed.title,
+      description: parsed.description,
+      quick_price: parsed.quick_price,
+      market_price: parsed.market_price,
+      confidence: parsed.confidence,
+      rationale: parsed.rationale,
+      needs_more_photos: parsed.needs_more_photos,
+      retake_recommended: parsed.retake_recommended,
+      image_quality: parsed.image_quality,
+      quality_note: parsed.quality_note
+    });
+    setSelectedPrice(parsed.quick_price);
+    const needsRetake = parsed.retake_recommended || parsed.needs_more_photos || parsed.image_quality === 'poor';
+    setAnalysisStatus(needsRetake ? 'needs_review' : 'completed');
+    if (!needsRetake) {
+      setStatus('results');
+    } else {
+      setStatus('analyzing');
+    }
+  };
+
+  const pollAnalysisJob = (jobId) => {
+    const startedAt = Date.now();
+    const maxWaitMs = 30000;
+
+    const tick = async () => {
+      try {
+        const job = await api.getAnalysisJob(jobId);
+        setAnalysisStatus(job.status);
+
+        if (job.status === 'completed') {
+          applyAnalysisResult(job.result_json || {});
+          return;
+        }
+
+        if (job.status === 'failed') {
+          setAnalysisError(job.error_message || 'Analysis failed. Try another photo or retry upload.');
+          setStatus('idle');
+          return;
+        }
+
+        if (Date.now() - startedAt > maxWaitMs) {
+          setAnalysisError('Analysis timed out. Try again.');
+          setStatus('idle');
+          return;
+        }
+
+        setTimeout(tick, 1000);
+      } catch (err) {
+        console.error(err);
+        setAnalysisError('Analysis failed. Try another photo or retry upload.');
+        setStatus('idle');
+      }
+    };
+
+    setTimeout(tick, 800);
+  };
+
   const handlePublish = async () => {
     if (!selectedPrice) return;
+    if (!publishConfirmed) return;
     setStatus('publishing');
     
     try {
@@ -104,6 +168,12 @@ const Create = () => {
             </motion.div>
             <h2 className="text-4xl font-black tracking-tighter text-foreground mb-6 h-10">{loadingText}</h2>
             <p className="text-muted-foreground font-bold text-xs uppercase tracking-widest opacity-60">EcoValue Intelligence Core</p>
+            <p className="text-[10px] font-black uppercase tracking-[0.25em] mt-4 text-primary/70">
+              {analysisStatus === 'needs_review' ? 'Retake recommended' : analysisStatus === 'queued' ? 'Queued' : 'Analyzing'}
+            </p>
+            {analysisError && (
+              <p className="text-sm text-red-600 font-medium mt-4 max-w-sm">{analysisError}</p>
+            )}
             
             <div className="absolute bottom-20 left-12 right-12 flex gap-2">
               {[1, 2, 3, 4, 5, 6].map(i => (
@@ -115,6 +185,32 @@ const Create = () => {
                 />
               ))}
             </div>
+            {analysisStatus === 'needs_review' && aiData && (
+              <div className="relative mt-8 w-full max-w-md bg-white rounded-[2rem] p-6 border border-border/40 shadow-xl text-left">
+                <p className="font-black uppercase tracking-[0.2em] text-[10px] text-muted-foreground">Photo quality gate</p>
+                <p className="mt-3 text-sm text-muted-foreground leading-relaxed">{aiData.quality_note}</p>
+                <div className="mt-6 grid grid-cols-2 gap-3">
+                  <button
+                    onClick={() => {
+                      setAnalysisStatus('completed');
+                      setStatus('results');
+                    }}
+                    className="rounded-2xl border border-border/40 py-3 font-black text-sm"
+                  >
+                    Continue anyway
+                  </button>
+                  <button
+                    onClick={() => {
+                      setStatus('idle');
+                      setAnalysisStatus('');
+                    }}
+                    className="rounded-2xl bg-primary text-white py-3 font-black text-sm"
+                  >
+                    Retake photo
+                  </button>
+                </div>
+              </div>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -174,6 +270,16 @@ const Create = () => {
               </div>
               <h3 className="text-4xl font-black tracking-tighter mb-4 leading-none">{aiData.title}</h3>
               <p className="text-muted-foreground font-medium leading-relaxed mb-10 text-lg">{aiData.description}</p>
+              <div className="mb-8 p-5 rounded-[2rem] bg-muted/30 border border-border/40">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="font-black uppercase tracking-[0.18em] text-[10px] text-muted-foreground">Publish summary</span>
+                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">{Math.round((aiData.confidence || 0) * 100)}% confidence</span>
+                </div>
+                <p className="text-sm text-muted-foreground leading-relaxed">{aiData.rationale}</p>
+                {(aiData.needs_more_photos || aiData.retake_recommended || aiData.image_quality === 'poor') && (
+                  <p className="text-sm font-semibold text-amber-700 mt-3">Photo quality weak. Retake if you want better draft.</p>
+                )}
+              </div>
               
               <div className="grid grid-cols-2 gap-5">
                 <button 
@@ -206,9 +312,21 @@ const Create = () => {
               </div>
             </div>
 
+            <label className="flex items-start gap-3 rounded-[2rem] bg-white p-5 border border-border/30 shadow-sm">
+              <input
+                type="checkbox"
+                checked={publishConfirmed}
+                onChange={(e) => setPublishConfirmed(e.target.checked)}
+                className="mt-1"
+              />
+              <span className="text-sm text-muted-foreground font-medium">
+                I reviewed title, price, and description. Publish only with my confirmation.
+              </span>
+            </label>
+
             <button 
               onClick={handlePublish}
-              disabled={!selectedPrice || status === 'publishing'}
+              disabled={!selectedPrice || status === 'publishing' || !publishConfirmed}
               className="w-full bg-primary text-white py-8 rounded-[2.5rem] font-black text-2xl shadow-2xl shadow-primary/40 active:scale-[0.95] transition-all disabled:opacity-30 flex items-center justify-center gap-4 border-b-8 border-black/10"
             >
               {status === 'publishing' ? <Loader2 className="animate-spin" /> : <Sparkles size={28} fill="currentColor" />}

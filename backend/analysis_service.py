@@ -23,6 +23,9 @@ class ListingAnalysis(BaseModel):
     condition: Literal["new", "like-new", "good", "fair"]
     confidence: float = Field(ge=0.0, le=1.0)
     needs_more_photos: bool = False
+    retake_recommended: bool = False
+    image_quality: Literal["good", "unclear", "poor"] = "good"
+    quality_note: str = Field(min_length=10)
     rationale: str = Field(min_length=10)
     suggested_attributes: SuggestedAttributes = Field(default_factory=SuggestedAttributes)
 
@@ -41,6 +44,9 @@ def _mock_analysis(filename: str) -> ListingAnalysis:
             category="furniture",
             condition="good",
             confidence=0.72,
+            retake_recommended=False,
+            image_quality="good",
+            quality_note="Shape and material are readable from filename cues, but seller should still confirm condition.",
             rationale="Chair shape and furniture cues are visible, but condition still needs a closer look.",
             suggested_attributes=SuggestedAttributes(material="Wood", color="Brown"),
         )
@@ -54,6 +60,9 @@ def _mock_analysis(filename: str) -> ListingAnalysis:
             category="electronics",
             condition="good",
             confidence=0.68,
+            retake_recommended=False,
+            image_quality="good",
+            quality_note="Filename points to electronics, but model and wear level remain unverified.",
             rationale="Filename suggests electronics, but exact model and condition need seller confirmation.",
             suggested_attributes=SuggestedAttributes(brand="Unknown", warranty="Unknown"),
         )
@@ -67,6 +76,9 @@ def _mock_analysis(filename: str) -> ListingAnalysis:
         condition="good",
         confidence=0.55,
         needs_more_photos=True,
+        retake_recommended=True,
+        image_quality="poor",
+        quality_note="Image evidence is limited, so a clearer, brighter, closer photo would help.",
         rationale="Image evidence is limited, so analysis stays conservative and asks for a clearer photo.",
         suggested_attributes=SuggestedAttributes(notes="Add more photos for better draft quality."),
     )
@@ -94,10 +106,16 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "- condition\n"
         "- confidence from 0 to 1\n"
         "- needs_more_photos\n"
+        "- retake_recommended\n"
+        "- image_quality\n"
+        "- quality_note\n"
         "- rationale\n"
         "- suggested_attributes\n"
-        "Never invent brand/model/condition. If evidence is weak, lower confidence and ask for more photos.\n"
-        "Keep copy short, practical, and editable."
+        "Never invent brand/model/condition.\n"
+        "If image is blurry, dark, cropped, or partial, set image_quality to poor or unclear, lower confidence, and recommend retake.\n"
+        "If evidence is weak, set needs_more_photos true and retake_recommended true.\n"
+        "Keep copy short, practical, and editable.\n"
+        "Price should be conservative when confidence is low."
     )
 
     client = genai.Client()
