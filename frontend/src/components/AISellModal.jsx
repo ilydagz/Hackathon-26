@@ -652,6 +652,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                       const selected = selectedPrice === strategy.key;
                       const price = getStrategyPrice(aiData, strategy.key);
                       const recommended = aiData.price_strategy === strategy.key;
+                      const tKey = strategy.key.replace(/_([a-z])/g, (g) => g[1].toUpperCase());
                       return (
                         <button
                           key={strategy.key}
@@ -661,12 +662,12 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                           <div className="flex items-center justify-between gap-md">
                             <div>
                               <div className="flex items-center gap-2">
-                                <p className="font-title-card">{t(`ai.${strategy.key}`)}</p>
+                                <p className="font-title-card">{t(`ai.${tKey}`)}</p>
                                 {recommended && (
                                   <span className="font-label-caps text-label-caps text-primary uppercase tracking-wider">{t('ai.strategyRecommended')}</span>
                                 )}
                               </div>
-                              <p className="font-body-sm text-body-sm text-text-secondary mt-1">{t(`ai.${strategy.key}Desc`)}</p>
+                              <p className="font-body-sm text-body-sm text-text-secondary mt-1">{t(`ai.${tKey}Desc`)}</p>
                             </div>
                             <p className="text-2xl font-bold">₺{price}</p>
                           </div>
