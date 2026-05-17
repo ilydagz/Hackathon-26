@@ -18,7 +18,6 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const [analysisStatus, setAnalysisStatus] = useState('');
   const [drafts, setDrafts] = useState([]);
   const [selectedDraftId, setSelectedDraftId] = useState(null);
-  const [publishConfirmed, setPublishConfirmed] = useState(false);
   
   // Draft State
   const [draftTitle, setDraftTitle] = useState('');
@@ -59,7 +58,6 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
     setAnalyzing(true);
     setAnalysisError('');
     setAnalysisStatus('queued');
-    setPublishConfirmed(false);
     setStep(2);
     try {
       const data = await api.analyzeListing(file);
@@ -89,7 +87,8 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
       image_quality: parsed.image_quality,
       quality_note: parsed.quality_note,
       rationale: parsed.rationale,
-      suggested_attributes: parsed.suggested_attributes || {}
+      suggested_attributes: parsed.suggested_attributes || {},
+      image_url: parsed.image_url || null
     });
     setDraftTitle(parsed.title || '');
     setDraftDescription(parsed.description || '');
@@ -155,7 +154,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         selected_price: Number(aiData?.quick_price || 0),
         status: 'draft',
         attributes: attributes,
-        image_url: image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg')
+        image_url: aiData?.image_url || (image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg'))
       };
 
       if (selectedDraftId) {
@@ -186,7 +185,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         selected_price: Number(finalPrice),
         status: 'active',
         attributes: attributes,
-        image_url: image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg')
+        image_url: aiData?.image_url || (image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg'))
       };
 
       if (selectedDraftId) {
@@ -611,20 +610,9 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                        className="w-full bg-surface-card border border-border-subtle rounded-lg px-4 py-3 font-body-main text-body-main text-on-surface focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                      />
                    </div>
-                   <label className="flex items-start gap-sm rounded-2xl border border-border-subtle bg-surface-card p-md">
-                     <input
-                       type="checkbox"
-                       checked={publishConfirmed}
-                       onChange={e => setPublishConfirmed(e.target.checked)}
-                       className="mt-1"
-                     />
-                     <span className="font-body-sm text-body-sm text-on-surface">
-                       I reviewed title, price, and description. Publish only with my confirmation.
-                     </span>
-                   </label>
                 </main>
                 <footer className="shrink-0 bg-surface-container-lowest border-t border-border-subtle p-margin-mobile pb-8">
-                  <button onClick={handlePublish} disabled={publishing || !publishConfirmed} className="w-full bg-primary text-on-primary font-title-card py-4 rounded-full disabled:opacity-50">
+                  <button onClick={handlePublish} disabled={publishing} className="w-full bg-primary text-on-primary font-title-card py-4 rounded-full disabled:opacity-50">
                     {publishing ? '...' : t('ai.publishListing')}
                   </button>
                 </footer>

@@ -17,7 +17,6 @@ const Create = () => {
   const [analysisJobId, setAnalysisJobId] = useState(null);
   const [analysisStatus, setAnalysisStatus] = useState('');
   const [analysisError, setAnalysisError] = useState('');
-  const [publishConfirmed, setPublishConfirmed] = useState(false);
 
   const loadingPhrases = [
     "Identifying your item...",
@@ -43,7 +42,6 @@ const Create = () => {
     setStatus('analyzing');
     setAnalysisError('');
     setAnalysisStatus('queued');
-    setPublishConfirmed(false);
     let phraseIndex = 0;
     const interval = setInterval(() => {
       phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
@@ -75,7 +73,8 @@ const Create = () => {
       needs_more_photos: parsed.needs_more_photos,
       retake_recommended: parsed.retake_recommended,
       image_quality: parsed.image_quality,
-      quality_note: parsed.quality_note
+      quality_note: parsed.quality_note,
+      image_url: parsed.image_url || null
     });
     setSelectedPrice(parsed.quick_price);
     const needsRetake = parsed.retake_recommended || parsed.needs_more_photos || parsed.image_quality === 'poor';
@@ -126,7 +125,6 @@ const Create = () => {
 
   const handlePublish = async () => {
     if (!selectedPrice) return;
-    if (!publishConfirmed) return;
     setStatus('publishing');
     
     try {
@@ -134,7 +132,7 @@ const Create = () => {
         title: aiData.title,
         description: aiData.description,
         selected_price: selectedPrice,
-        image_url: image.name,
+        image_url: aiData.image_url || image.name,
       });
       navigate('/feed');
     } catch (error) {
@@ -312,21 +310,9 @@ const Create = () => {
               </div>
             </div>
 
-            <label className="flex items-start gap-3 rounded-[2rem] bg-white p-5 border border-border/30 shadow-sm">
-              <input
-                type="checkbox"
-                checked={publishConfirmed}
-                onChange={(e) => setPublishConfirmed(e.target.checked)}
-                className="mt-1"
-              />
-              <span className="text-sm text-muted-foreground font-medium">
-                I reviewed title, price, and description. Publish only with my confirmation.
-              </span>
-            </label>
-
             <button 
               onClick={handlePublish}
-              disabled={!selectedPrice || status === 'publishing' || !publishConfirmed}
+              disabled={!selectedPrice || status === 'publishing'}
               className="w-full bg-primary text-white py-8 rounded-[2.5rem] font-black text-2xl shadow-2xl shadow-primary/40 active:scale-[0.95] transition-all disabled:opacity-30 flex items-center justify-center gap-4 border-b-8 border-black/10"
             >
               {status === 'publishing' ? <Loader2 className="animate-spin" /> : <Sparkles size={28} fill="currentColor" />}

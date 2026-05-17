@@ -92,7 +92,11 @@ def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], fi
 
         analysis = analyze_listing_image(file_path, mime_type, filename)
         job.status = "completed"
-        job.result_json = analysis.model_dump()
+        job.result_json = {
+            **analysis.model_dump(),
+            "image_url": job.image_url,
+            "image_name": job.image_name,
+        }
         db.commit()
     except Exception as exc:
         job = db.query(models.AnalysisJob).filter(models.AnalysisJob.id == job_id).first()
