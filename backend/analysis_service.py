@@ -19,6 +19,10 @@ class ListingAnalysis(BaseModel):
     description: str = Field(min_length=20, max_length=800)
     quick_price: int = Field(ge=1)
     market_price: int = Field(ge=1)
+    price_strategy: Literal["sell_fast", "balanced", "maximize"]
+    price_floor: int = Field(ge=1)
+    price_ceiling: int = Field(ge=1)
+    price_rationale: str = Field(min_length=10)
     category: Literal["furniture", "electronics", "clothing", "decor", "other"]
     condition: Literal["new", "like-new", "good", "fair"]
     confidence: float = Field(ge=0.0, le=1.0)
@@ -33,14 +37,32 @@ class ListingAnalysis(BaseModel):
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
 
 
+def _pricing_profile(quick_price: int, market_price: int, confidence: float) -> dict:
+    maximize_price = max(market_price, round(market_price * 1.15))
+    sell_fast_price = max(1, quick_price)
+    balanced_price = max(sell_fast_price, market_price)
+    return {
+        "price_strategy": "sell_fast" if confidence < 0.65 else "balanced",
+        "price_floor": max(1, round(sell_fast_price * 0.9)),
+        "price_ceiling": max(maximize_price, balanced_price),
+        "price_rationale": (
+            "Lower price keeps item competitive and moves faster."
+            if confidence < 0.65
+            else "Balanced price follows market range for steady sale."
+        ),
+    }
+
+
 def _mock_analysis(filename: str) -> ListingAnalysis:
     name = (filename or "").lower()
     if any(token in name for token in ["chair", "table", "desk", "sofa"]):
+        pricing = _pricing_profile(850, 1100, 0.72)
         return ListingAnalysis(
             title="Wooden Desk Chair",
             description="Sturdy second-hand desk chair with clean lines and practical everyday use.",
             quick_price=850,
             market_price=1100,
+            **pricing,
             category="furniture",
             condition="good",
             confidence=0.72,
@@ -52,11 +74,13 @@ def _mock_analysis(filename: str) -> ListingAnalysis:
         )
 
     if any(token in name for token in ["phone", "watch", "headphone", "laptop", "camera", "mouse"]):
+        pricing = _pricing_profile(1500, 1900, 0.68)
         return ListingAnalysis(
             title="Used Electronics Item",
             description="Clean used electronics item with visible signs of normal wear and ready for a new owner.",
             quick_price=1500,
             market_price=1900,
+            **pricing,
             category="electronics",
             condition="good",
             confidence=0.68,
@@ -67,11 +91,13 @@ def _mock_analysis(filename: str) -> ListingAnalysis:
             suggested_attributes=SuggestedAttributes(brand="Unknown", warranty="Unknown"),
         )
 
+    pricing = _pricing_profile(500, 650, 0.55)
     return ListingAnalysis(
         title="Second-Hand Item",
         description="Practical second-hand item with straightforward listing copy and room for seller edits.",
         quick_price=500,
         market_price=650,
+        **pricing,
         category="other",
         condition="good",
         confidence=0.55,
@@ -102,6 +128,10 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "- description\n"
         "- quick_price\n"
         "- market_price\n"
+        "- price_strategy\n"
+        "- price_floor\n"
+        "- price_ceiling\n"
+        "- price_rationale\n"
         "- category\n"
         "- condition\n"
         "- confidence from 0 to 1\n"
@@ -115,6 +145,8 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "If image is blurry, dark, cropped, or partial, set image_quality to poor or unclear, lower confidence, and recommend retake.\n"
         "If evidence is weak, set needs_more_photos true and retake_recommended true.\n"
         "Keep copy short, practical, and editable.\n"
+        "Use sell_fast, balanced, or maximize for price_strategy.\n"
+        "Set price_floor below lowest recommended price and price_ceiling above highest recommended price.\n"
         "Price should be conservative when confidence is low."
     )
 

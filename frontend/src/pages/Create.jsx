@@ -1,8 +1,39 @@
-import React, { useState, useRef } from 'react';
+import { useState, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { api } from '../api';
-import { Camera, Loader2, Sparkles, Check, ChevronLeft, Zap, Target, X } from 'lucide-react';
+import { Camera, Loader2, Sparkles, Check, ChevronLeft, Zap, Target } from 'lucide-react';
 import { motion, AnimatePresence } from 'framer-motion';
+
+const PRICE_STRATEGIES = [
+  {
+    key: 'sell_fast',
+    label: 'Sell fast',
+    icon: Zap,
+    description: 'Lowest recommended price. Best if you want quickest sale.',
+  },
+  {
+    key: 'balanced',
+    label: 'Balanced',
+    icon: Target,
+    description: 'Middle ground. Good mix of speed and payout.',
+  },
+  {
+    key: 'maximize',
+    label: 'Maximize',
+    icon: Sparkles,
+    description: 'Highest suggested price. Best if you can wait longer.',
+  },
+];
+
+const getStrategyPrice = (aiData, strategy) => {
+  if (!aiData) return 0;
+  if (strategy === 'sell_fast') return Number(aiData.quick_price || 0);
+  if (strategy === 'balanced') return Number(aiData.market_price || aiData.quick_price || 0);
+  if (strategy === 'maximize') {
+    return Number(aiData.price_ceiling || Math.round((aiData.market_price || aiData.quick_price || 0) * 1.15));
+  }
+  return Number(aiData.market_price || aiData.quick_price || 0);
+};
 
 const Create = () => {
   const navigate = useNavigate();
@@ -12,9 +43,9 @@ const Create = () => {
   const [preview, setPreview] = useState(null);
   const [status, setStatus] = useState('idle'); // idle, analyzing, results, publishing
   const [aiData, setAiData] = useState(null);
-  const [selectedPrice, setSelectedPrice] = useState(null);
+  const [selectedStrategy, setSelectedStrategy] = useState('balanced');
+  const [customPriceInput, setCustomPriceInput] = useState('');
   const [loadingText, setLoadingText] = useState("EcoValue Agents analyzing...");
-  const [analysisJobId, setAnalysisJobId] = useState(null);
   const [analysisStatus, setAnalysisStatus] = useState('');
   const [analysisError, setAnalysisError] = useState('');
 
@@ -51,7 +82,6 @@ const Create = () => {
     try {
       const data = await api.analyzeListing(file);
       const jobId = data.job_id || data.id;
-      setAnalysisJobId(jobId);
       pollAnalysisJob(jobId);
     } catch (error) {
       console.error('Analysis failed:', error);
@@ -68,6 +98,10 @@ const Create = () => {
       description: parsed.description,
       quick_price: parsed.quick_price,
       market_price: parsed.market_price,
+      price_strategy: parsed.price_strategy,
+      price_floor: parsed.price_floor,
+      price_ceiling: parsed.price_ceiling,
+      price_rationale: parsed.price_rationale,
       confidence: parsed.confidence,
       rationale: parsed.rationale,
       needs_more_photos: parsed.needs_more_photos,
@@ -76,7 +110,8 @@ const Create = () => {
       quality_note: parsed.quality_note,
       image_url: parsed.image_url || null
     });
-    setSelectedPrice(parsed.quick_price);
+    setSelectedStrategy(parsed.price_strategy || 'balanced');
+    setCustomPriceInput('');
     const needsRetake = parsed.retake_recommended || parsed.needs_more_photos || parsed.image_quality === 'poor';
     setAnalysisStatus(needsRetake ? 'needs_review' : 'completed');
     if (!needsRetake) {
@@ -124,15 +159,22 @@ const Create = () => {
   };
 
   const handlePublish = async () => {
-    if (!selectedPrice) return;
+    if (!aiData) return;
     setStatus('publishing');
+    const finalPrice = selectedStrategy === 'custom'
+      ? Number(customPriceInput) || getStrategyPrice(aiData, 'balanced')
+      : getStrategyPrice(aiData, selectedStrategy);
     
     try {
       await api.createListing({
         title: aiData.title,
         description: aiData.description,
-        selected_price: selectedPrice,
+        selected_price: finalPrice,
         image_url: aiData.image_url || image.name,
+        price_strategy: selectedStrategy,
+        price_floor: aiData.price_floor,
+        price_ceiling: aiData.price_ceiling,
+        price_rationale: aiData.price_rationale,
       });
       navigate('/feed');
     } catch (error) {
@@ -274,45 +316,76 @@ const Create = () => {
                   <span className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">{Math.round((aiData.confidence || 0) * 100)}% confidence</span>
                 </div>
                 <p className="text-sm text-muted-foreground leading-relaxed">{aiData.rationale}</p>
+                {aiData.price_rationale && (
+                  <p className="text-sm text-muted-foreground leading-relaxed mt-2">{aiData.price_rationale}</p>
+                )}
+                {aiData.price_floor && aiData.price_ceiling && (
+                  <p className="text-xs font-black uppercase tracking-[0.18em] text-primary/70 mt-3">
+                    Price band: ₺{aiData.price_floor} - ₺{aiData.price_ceiling}
+                  </p>
+                )}
                 {(aiData.needs_more_photos || aiData.retake_recommended || aiData.image_quality === 'poor') && (
                   <p className="text-sm font-semibold text-amber-700 mt-3">Photo quality weak. Retake if you want better draft.</p>
                 )}
               </div>
               
-              <div className="grid grid-cols-2 gap-5">
-                <button 
-                  onClick={() => setSelectedPrice(aiData.quick_price)}
-                  className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${selectedPrice === aiData.quick_price ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
-                >
-                  <Zap size={24} className={selectedPrice === aiData.quick_price ? 'text-primary' : 'text-muted-foreground/40'} fill={selectedPrice === aiData.quick_price ? 'currentColor' : 'none'} />
-                  <span className="text-[9px] font-black uppercase tracking-[0.15em] mt-6 mb-2">Quick Sell</span>
-                  <span className="text-3xl font-black tracking-tighter">₺{aiData.quick_price}</span>
-                  {selectedPrice === aiData.quick_price && (
-                    <motion.div layoutId="check" className="absolute top-4 right-4 bg-primary text-white p-1.5 rounded-full shadow-lg">
-                      <Check size={14} strokeWidth={4} />
-                    </motion.div>
-                  )}
-                </button>
-                
-                <button 
-                  onClick={() => setSelectedPrice(aiData.market_price)}
-                  className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${selectedPrice === aiData.market_price ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
-                >
-                  <Target size={24} className={selectedPrice === aiData.market_price ? 'text-primary' : 'text-muted-foreground/40'} />
-                  <span className="text-[9px] font-black uppercase tracking-[0.15em] mt-6 mb-2">Market Value</span>
-                  <span className="text-3xl font-black tracking-tighter">₺{aiData.market_price}</span>
-                  {selectedPrice === aiData.market_price && (
-                    <motion.div layoutId="check" className="absolute top-4 right-4 bg-primary text-white p-1.5 rounded-full shadow-lg">
-                      <Check size={14} strokeWidth={4} />
-                    </motion.div>
-                  )}
-                </button>
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                {PRICE_STRATEGIES.map((strategy) => {
+                  const Icon = strategy.icon;
+                  const isSelected = selectedStrategy === strategy.key;
+                  const price = getStrategyPrice(aiData, strategy.key);
+                  const isRecommended = aiData.price_strategy === strategy.key;
+                  return (
+                    <button
+                      key={strategy.key}
+                      onClick={() => setSelectedStrategy(strategy.key)}
+                      className={`relative p-6 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${isSelected ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
+                    >
+                      <Icon size={24} className={isSelected ? 'text-primary' : 'text-muted-foreground/40'} fill={isSelected ? 'currentColor' : 'none'} />
+                      <div className="mt-5 flex items-center gap-2">
+                        <span className="text-[9px] font-black uppercase tracking-[0.15em]">{strategy.label}</span>
+                        {isRecommended && (
+                          <span className="text-[9px] font-black uppercase tracking-[0.15em] text-primary">Recommended</span>
+                        )}
+                      </div>
+                      <span className="text-2xl font-black tracking-tighter mt-2">₺{price}</span>
+                      <p className="text-xs text-muted-foreground mt-2 leading-relaxed">{strategy.description}</p>
+                      {isSelected && (
+                        <motion.div layoutId="check" className="absolute top-4 right-4 bg-primary text-white p-1.5 rounded-full shadow-lg">
+                          <Check size={14} strokeWidth={4} />
+                        </motion.div>
+                      )}
+                    </button>
+                  );
+                })}
+              </div>
+              <div className="mt-5 p-5 rounded-[2rem] bg-muted/30 border border-border/40">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <span className="font-black uppercase tracking-[0.18em] text-[10px] text-muted-foreground">Custom price</span>
+                  <span className="text-[11px] font-black uppercase tracking-[0.2em] text-primary">Optional override</span>
+                </div>
+                <input
+                  type="number"
+                  min="1"
+                  value={customPriceInput}
+                  onChange={(e) => {
+                    setCustomPriceInput(e.target.value);
+                    setSelectedStrategy('custom');
+                  }}
+                  placeholder="Enter custom price"
+                  className="w-full rounded-[1.5rem] border border-border/50 bg-white px-5 py-4 font-bold text-lg focus:outline-none focus:ring-2 focus:ring-primary"
+                />
+                {customPriceInput && aiData.price_floor && aiData.price_ceiling && (Number(customPriceInput) < aiData.price_floor || Number(customPriceInput) > aiData.price_ceiling) && (
+                  <p className="text-sm font-semibold text-amber-700 mt-3">
+                    Outside suggested range. Sale may move slower or faster than analysis expects.
+                  </p>
+                )}
               </div>
             </div>
 
             <button 
               onClick={handlePublish}
-              disabled={!selectedPrice || status === 'publishing'}
+              disabled={!aiData || status === 'publishing'}
               className="w-full bg-primary text-white py-8 rounded-[2.5rem] font-black text-2xl shadow-2xl shadow-primary/40 active:scale-[0.95] transition-all disabled:opacity-30 flex items-center justify-center gap-4 border-b-8 border-black/10"
             >
               {status === 'publishing' ? <Loader2 className="animate-spin" /> : <Sparkles size={28} fill="currentColor" />}

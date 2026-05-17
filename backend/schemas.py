@@ -48,6 +48,10 @@ class ListingBase(BaseModel):
     subcategory: Optional[str] = None
     condition: Optional[str] = "good"
     attributes: Optional[dict] = None
+    price_strategy: Optional[str] = None
+    price_floor: Optional[float] = None
+    price_ceiling: Optional[float] = None
+    price_rationale: Optional[str] = None
 
 class ListingCreate(ListingBase):
     status: Optional[str] = "active"
@@ -61,6 +65,10 @@ class ListingUpdate(BaseModel):
     condition: Optional[str] = None
     status: Optional[str] = None
     attributes: Optional[dict] = None
+    price_strategy: Optional[str] = None
+    price_floor: Optional[float] = None
+    price_ceiling: Optional[float] = None
+    price_rationale: Optional[str] = None
 
 class ListingResponse(ListingBase):
     id: int
@@ -117,6 +125,10 @@ class AIAnalysisResponse(BaseModel):
     description: str
     quick_price: float
     market_price: float
+    price_strategy: str
+    price_floor: float
+    price_ceiling: float
+    price_rationale: str
     category: str
     condition: str
     confidence: float

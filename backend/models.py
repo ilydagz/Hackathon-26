@@ -32,6 +32,10 @@ class Listing(Base):
     condition = Column(String, default="good") # new, like-new, good, fair
     status = Column(String, default="active") # active, sold, draft, flagged
     attributes = Column(JSON, nullable=True) # For specific details like size, specs
+    price_strategy = Column(String, nullable=True)
+    price_floor = Column(Float, nullable=True)
+    price_ceiling = Column(Float, nullable=True)
+    price_rationale = Column(String, nullable=True)
     flags = Column(Integer, default=0)
     created_at = Column(DateTime, default=datetime.utcnow)
     

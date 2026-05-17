@@ -116,6 +116,25 @@ def ensure_user_avatar_column():
 
 ensure_user_avatar_column()
 
+def ensure_listing_price_columns():
+    inspector = inspect(engine)
+    columns = {column["name"] for column in inspector.get_columns("listings")}
+    statements = []
+    if "price_strategy" not in columns:
+        statements.append("ALTER TABLE listings ADD COLUMN price_strategy VARCHAR")
+    if "price_floor" not in columns:
+        statements.append("ALTER TABLE listings ADD COLUMN price_floor FLOAT")
+    if "price_ceiling" not in columns:
+        statements.append("ALTER TABLE listings ADD COLUMN price_ceiling FLOAT")
+    if "price_rationale" not in columns:
+        statements.append("ALTER TABLE listings ADD COLUMN price_rationale VARCHAR")
+    if statements:
+        with engine.begin() as conn:
+            for statement in statements:
+                conn.execute(text(statement))
+
+ensure_listing_price_columns()
+
 def log_action(db: Session, action: str, result: str, user_id: Optional[int] = None, role: Optional[str] = None, target: Optional[str] = None, ip: Optional[str] = None):
     new_log = models.Log(
         user_id=user_id,

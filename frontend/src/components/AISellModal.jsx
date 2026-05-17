@@ -1,7 +1,38 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useLanguage } from '../context/LanguageContext';
+
+const PRICE_STRATEGIES = [
+  {
+    key: 'sell_fast',
+    label: 'Sell fast',
+    icon: 'zap',
+    description: 'Lowest suggested price. Moves fastest.',
+  },
+  {
+    key: 'balanced',
+    label: 'Balanced',
+    icon: 'target',
+    description: 'Middle price. Best mix of speed and payout.',
+  },
+  {
+    key: 'maximize',
+    label: 'Maximize',
+    icon: 'sparkles',
+    description: 'Highest suggested price. Best if you can wait.',
+  },
+];
+
+const getStrategyPrice = (aiData, strategy) => {
+  if (!aiData) return 0;
+  if (strategy === 'sell_fast') return Number(aiData.quick_price || 0);
+  if (strategy === 'balanced') return Number(aiData.market_price || aiData.quick_price || 0);
+  if (strategy === 'maximize') {
+    return Number(aiData.price_ceiling || Math.round((aiData.market_price || aiData.quick_price || 0) * 1.15));
+  }
+  return Number(aiData.market_price || aiData.quick_price || 0);
+};
 
 const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const { t } = useLanguage();
@@ -9,7 +40,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const [image, setImage] = useState(null);
   const [preview, setPreview] = useState(null);
   const [aiData, setAiData] = useState(null);
-  const [selectedPrice, setSelectedPrice] = useState('quick');
+  const [selectedPrice, setSelectedPrice] = useState('balanced');
   const [customPrice, setCustomPrice] = useState('');
   const [publishing, setPublishing] = useState(false);
   const [analyzing, setAnalyzing] = useState(false);
@@ -29,20 +60,14 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
-  useEffect(() => {
-    if (isOpen && step === 0) {
-      fetchDrafts();
-    }
-  }, [isOpen, step]);
-
-  const fetchDrafts = async () => {
+  async function fetchDrafts() {
     try {
       const data = await api.getDrafts();
       setDrafts(data);
     } catch (err) {
       console.error(err);
     }
-  };
+  }
 
   const handleImageChange = (e) => {
     const file = e.target.files[0];
@@ -79,6 +104,10 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
       description: parsed.description,
       quick_price: parsed.quick_price,
       market_price: parsed.market_price,
+      price_strategy: parsed.price_strategy,
+      price_floor: parsed.price_floor,
+      price_ceiling: parsed.price_ceiling,
+      price_rationale: parsed.price_rationale,
       category: parsed.category,
       condition: parsed.condition,
       confidence: parsed.confidence,
@@ -95,7 +124,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
     setDraftCategory(parsed.category || 'furniture');
     setDraftCondition(parsed.condition || 'good');
     setAttributes(parsed.suggested_attributes || {});
-    setSelectedPrice('quick');
+    setSelectedPrice(parsed.price_strategy || 'balanced');
     setCustomPrice('');
     const needsRetake = parsed.retake_recommended || parsed.needs_more_photos || parsed.image_quality === 'poor';
     setAnalysisStatus(needsRetake ? 'needs_review' : 'completed');
@@ -151,10 +180,14 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         description: draftDescription,
         category: draftCategory,
         condition: draftCondition,
-        selected_price: Number(aiData?.quick_price || 0),
+        selected_price: Number(getStrategyPrice(aiData, selectedPrice)),
         status: 'draft',
         attributes: attributes,
-        image_url: aiData?.image_url || (image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg'))
+        image_url: aiData?.image_url || (image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg')),
+        price_strategy: selectedPrice,
+        price_floor: aiData?.price_floor,
+        price_ceiling: aiData?.price_ceiling,
+        price_rationale: aiData?.price_rationale,
       };
 
       if (selectedDraftId) {
@@ -173,9 +206,9 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
 
   const handlePublish = async () => {
     setPublishing(true);
-    let finalPrice = selectedPrice === 'quick'
-      ? aiData?.quick_price
-      : (selectedPrice === 'market' ? aiData?.market_price : (Number(customPrice) || aiData?.quick_price));
+    const finalPrice = selectedPrice === 'custom'
+      ? (Number(customPrice) || getStrategyPrice(aiData, 'balanced'))
+      : getStrategyPrice(aiData, selectedPrice);
     try {
       const payload = {
         title: draftTitle,
@@ -185,7 +218,11 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         selected_price: Number(finalPrice),
         status: 'active',
         attributes: attributes,
-        image_url: aiData?.image_url || (image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg'))
+        image_url: aiData?.image_url || (image ? image.name : (preview ? preview.split('/').pop() : 'demo.jpg')),
+        price_strategy: selectedPrice,
+        price_floor: aiData?.price_floor,
+        price_ceiling: aiData?.price_ceiling,
+        price_rationale: aiData?.price_rationale,
       };
 
       if (selectedDraftId) {
@@ -216,7 +253,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
     setDraftDescription('');
     setDraftCategory('furniture');
     setDraftCondition('good');
-    setSelectedPrice('quick');
+    setSelectedPrice('balanced');
     setCustomPrice('');
     setAttributes({});
   };
@@ -254,7 +291,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
               </button>
               <h1 className="font-display-lg text-headline-md font-bold text-primary">{t('ai.sellItem')}</h1>
               {step !== 0 ? (
-                <button onClick={() => setStep(0)} className="text-on-surface-variant font-title-card text-title-card px-2 hover:opacity-80 transition-opacity active:scale-95">{t('ai.drafts')}</button>
+                <button onClick={async () => { setStep(0); await fetchDrafts(); }} className="text-on-surface-variant font-title-card text-title-card px-2 hover:opacity-80 transition-opacity active:scale-95">{t('ai.drafts')}</button>
               ) : <div className="w-10" />}
             </header>
 
@@ -280,6 +317,10 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                           description: draft.description,
                           quick_price: draft.selected_price || 500,
                           market_price: Math.round((draft.selected_price || 500) * 1.2),
+                          price_strategy: draft.price_strategy || 'balanced',
+                          price_floor: draft.price_floor || Math.round((draft.selected_price || 500) * 0.9),
+                          price_ceiling: draft.price_ceiling || Math.round((draft.selected_price || 500) * 1.2),
+                          price_rationale: draft.price_rationale || 'Loaded from saved draft.',
                           category: draft.category || 'furniture',
                           condition: draft.condition || 'good',
                           confidence: 0.8,
@@ -292,7 +333,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                         setDraftCategory(draft.category || 'furniture');
                         setDraftCondition(draft.condition || 'good');
                         setAttributes(draft.attributes || {});
-                        setSelectedPrice('quick');
+                        setSelectedPrice(draft.price_strategy || 'balanced');
                         setCustomPrice('');
                         setPreview(`http://localhost:8000/static/images/${draft.image_url}`);
                         setStep(3);
@@ -579,23 +620,51 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                      </div>
                      <p className="font-body-sm text-body-sm text-text-secondary line-clamp-2">{draftTitle}</p>
                      <p className="font-body-sm text-body-sm text-text-secondary">Reason: {aiData.rationale}</p>
+                     {aiData.price_rationale && (
+                       <p className="font-body-sm text-body-sm text-text-secondary">{aiData.price_rationale}</p>
+                     )}
+                     {aiData.price_floor && aiData.price_ceiling && (
+                       <p className="font-label-caps text-label-caps text-primary/80 uppercase tracking-wider">
+                         {t('ai.priceBand')}: ₺{aiData.price_floor} - ₺{aiData.price_ceiling}
+                       </p>
+                     )}
                      {aiData.quality_note && (
                        <p className="font-body-sm text-body-sm text-amber-700">Photo quality: {aiData.quality_note}</p>
                      )}
                    </div>
-                   <div className="flex flex-col gap-md">
-                    <button onClick={() => setSelectedPrice('quick')} className={`p-md rounded-xl border-2 text-left ${selectedPrice === 'quick' ? 'border-primary' : 'border-border-subtle'}`}>
-                      <p className="font-title-card">{t('ai.quickSale')}</p>
-                      <p className="text-2xl font-bold">{aiData.quick_price} {t('action.tl')}</p>
-                    </button>
-                    <button onClick={() => setSelectedPrice('market')} className={`p-md rounded-xl border-2 text-left ${selectedPrice === 'market' ? 'border-primary' : 'border-border-subtle'}`}>
-                      <p className="font-title-card">{t('ai.marketPrice')}</p>
-                      <p className="text-2xl font-bold">{aiData.market_price} {t('action.tl')}</p>
-                    </button>
+                   <div className="grid grid-cols-1 gap-md">
+                    {PRICE_STRATEGIES.map((strategy) => {
+                      const selected = selectedPrice === strategy.key;
+                      const price = getStrategyPrice(aiData, strategy.key);
+                      const recommended = aiData.price_strategy === strategy.key;
+                      return (
+                        <button
+                          key={strategy.key}
+                          onClick={() => setSelectedPrice(strategy.key)}
+                          className={`relative p-md rounded-xl border-2 text-left transition-all ${selected ? 'border-primary bg-primary/5' : 'border-border-subtle bg-surface-card'}`}
+                        >
+                          <div className="flex items-center justify-between gap-md">
+                            <div>
+                              <div className="flex items-center gap-2">
+                                <p className="font-title-card">{t(`ai.${strategy.key}`)}</p>
+                                {recommended && (
+                                  <span className="font-label-caps text-label-caps text-primary uppercase tracking-wider">{t('ai.strategyRecommended')}</span>
+                                )}
+                              </div>
+                              <p className="font-body-sm text-body-sm text-text-secondary mt-1">{t(`ai.${strategy.key}Desc`)}</p>
+                            </div>
+                            <p className="text-2xl font-bold">₺{price}</p>
+                          </div>
+                        </button>
+                      );
+                    })}
                    </div>
-                   <div className={`p-md rounded-xl border-2 text-left ${selectedPrice === 'custom' ? 'border-primary' : 'border-border-subtle'}`}>
-                     <div className="flex items-center justify-between mb-sm">
-                       <p className="font-title-card">{t('ai.customPrice')}</p>
+                   <div className={`p-md rounded-xl border-2 text-left ${selectedPrice === 'custom' ? 'border-primary bg-primary/5' : 'border-border-subtle bg-surface-card'}`}>
+                     <div className="flex items-start justify-between gap-md mb-sm">
+                       <div>
+                         <p className="font-title-card">{t('ai.customPrice')}</p>
+                         <p className="font-body-sm text-body-sm text-text-secondary mt-1">{t('ai.customPriceHint')}</p>
+                       </div>
                        <button onClick={() => setSelectedPrice('custom')} className="font-label-caps text-label-caps text-primary">Use</button>
                      </div>
                      <input
@@ -609,6 +678,9 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                        placeholder="Enter custom price"
                        className="w-full bg-surface-card border border-border-subtle rounded-lg px-4 py-3 font-body-main text-body-main text-on-surface focus:outline-none focus:ring-2 focus:ring-primary transition-all"
                      />
+                     {customPrice && aiData.price_floor && aiData.price_ceiling && (Number(customPrice) < aiData.price_floor || Number(customPrice) > aiData.price_ceiling) && (
+                       <p className="font-body-sm text-body-sm text-amber-700 mt-3">{t('ai.outsideRange')}</p>
+                     )}
                    </div>
                 </main>
                 <footer className="shrink-0 bg-surface-container-lowest border-t border-border-subtle p-margin-mobile pb-8">
