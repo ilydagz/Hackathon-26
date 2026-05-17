@@ -42,8 +42,8 @@ class ListingAnalysis(BaseModel):
     suggested_attributes: SuggestedAttributes = Field(default_factory=SuggestedAttributes)
 
 
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
-FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.1-flash-lite")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 

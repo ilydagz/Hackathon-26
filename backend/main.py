@@ -39,8 +39,8 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-3.1-flash-lite")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "images")
 AVATAR_DIR = os.path.join(BASE_DIR, "static", "avatars")
@@ -1039,7 +1039,7 @@ async def analyze_image(
         status="queued",
         image_url=safe_name,
         image_name=original_name,
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
+        model=os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite"),
     )
     db.add(job)
     db.commit()
