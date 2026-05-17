@@ -40,7 +40,7 @@ app.add_middleware(
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemma-4-26b-a4b-it")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "images")
 AVATAR_DIR = os.path.join(BASE_DIR, "static", "avatars")
@@ -142,7 +142,17 @@ def gemini_model_candidates() -> List[str]:
 
 
 def is_gemini_rate_limit(exc: Exception) -> bool:
-    return isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 500, 503}
+    if isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 500, 503}:
+        return True
+    if isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, TimeoutError):
+        return True
+    # Catch string timeout reasons too
+    if isinstance(exc, urllib.error.URLError) and "timeout" in str(exc.reason).lower():
+        return True
+    # Catch 400 bad request for image unsupported in Gemma 4
+    if isinstance(exc, urllib.error.HTTPError) and exc.code == 400:
+        return True
+    return False
 
 def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> dict:
     api_key = get_gemini_api_key()
@@ -173,7 +183,7 @@ def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> di
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=90) as response:
+            with urllib.request.urlopen(request, timeout=15) as response:
                 body = response.read().decode("utf-8")
             response_json = json.loads(body)
             text = extract_gemini_text(response_json).strip()

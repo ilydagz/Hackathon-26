@@ -43,7 +43,7 @@ class ListingAnalysis(BaseModel):
 
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
-FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemma-4-26b-a4b-it")
+FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -109,7 +109,13 @@ def _model_candidates() -> list[str]:
 
 
 def _is_rate_limit(exc: Exception) -> bool:
-    return isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 503}
+    if isinstance(exc, urllib.error.HTTPError) and exc.code in {400, 429, 500, 503}:
+        return True
+    if isinstance(exc, urllib.error.URLError) and isinstance(exc.reason, TimeoutError):
+        return True
+    if isinstance(exc, urllib.error.URLError) and "timeout" in str(exc.reason).lower():
+        return True
+    return False
 
 
 def _normalize_category(value: object) -> str:
@@ -216,7 +222,7 @@ def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], pr
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=90) as response:
+            with urllib.request.urlopen(request, timeout=15) as response:
                 body = response.read().decode("utf-8")
             return json.loads(body)
         except Exception as exc:
