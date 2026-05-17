@@ -3,15 +3,17 @@ import shutil
 import asyncio
 import hashlib
 import secrets
+import uuid
 from typing import List, Optional
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Header, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
-from sqlalchemy import desc
+from sqlalchemy import desc, inspect, text
 
 import models
 import schemas
+from analysis_service import analyze_listing_image
 from database import engine, get_db
 
 # Create database tables
@@ -29,15 +31,62 @@ app.add_middleware(
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "images")
+AVATAR_DIR = os.path.join(BASE_DIR, "static", "avatars")
 os.makedirs(UPLOAD_DIR, exist_ok=True)
+os.makedirs(AVATAR_DIR, exist_ok=True)
 
 app.mount("/static", StaticFiles(directory=os.path.join(BASE_DIR, "static")), name="static")
 
 # Very simple in-memory session store for Hackathon purposes
 active_sessions = {} # token -> user_id
 
+
+def resolve_session_user_id(authorization: Optional[str]) -> Optional[int]:
+    if not authorization or not authorization.startswith("Bearer "):
+        return None
+    token = authorization.split(" ")[1]
+    return active_sessions.get(token)
+
 def hash_password(password: str) -> str:
     return hashlib.sha256(password.encode()).hexdigest()
+
+def build_avatar_url(filename: str) -> str:
+    return f"avatars/{filename}"
+
+def save_avatar_upload(file: UploadFile, user_id: int) -> str:
+    original_name = file.filename or "avatar"
+    _, ext = os.path.splitext(original_name)
+    ext = ext.lower() if ext else ".jpg"
+    if ext not in {".jpg", ".jpeg", ".png", ".webp", ".gif"}:
+        ext = ".jpg"
+
+    filename = f"avatar-{user_id}-{uuid.uuid4().hex}{ext}"
+    file_path = os.path.join(AVATAR_DIR, filename)
+
+    with open(file_path, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+
+    return build_avatar_url(filename)
+
+def delete_static_asset(asset_url: Optional[str]):
+    if not asset_url:
+        return
+
+    file_path = os.path.join(BASE_DIR, "static", asset_url)
+    if os.path.exists(file_path):
+        try:
+            os.remove(file_path)
+        except OSError:
+            pass
+
+def ensure_user_avatar_column():
+    inspector = inspect(engine)
+    columns = {column["name"] for column in inspector.get_columns("users")}
+    if "avatar_url" not in columns:
+        with engine.begin() as conn:
+            conn.execute(text("ALTER TABLE users ADD COLUMN avatar_url VARCHAR"))
+
+ensure_user_avatar_column()
 
 def log_action(db: Session, action: str, result: str, user_id: Optional[int] = None, role: Optional[str] = None, target: Optional[str] = None, ip: Optional[str] = None):
     new_log = models.Log(
@@ -139,14 +188,37 @@ def get_current_user_profile(current_user: models.User = Depends(get_current_use
     return current_user
 
 @app.put("/api/users/me", response_model=schemas.UserResponse)
-def update_current_user_profile(user_update: schemas.UserBase, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    current_user.name = user_update.name
-    # Email updates might require more logic, but for hackathon we'll allow it:
-    current_user.email = user_update.email
-    current_user.location = user_update.location
-    current_user.bio = user_update.bio
+def update_current_user_profile(user_update: schemas.UserUpdate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    update_data = user_update.dict(exclude_unset=True)
+    for key, value in update_data.items():
+        setattr(current_user, key, value)
     db.commit()
     db.refresh(current_user)
+    return current_user
+
+@app.post("/api/users/me/avatar", response_model=schemas.UserResponse)
+async def update_current_user_avatar(
+    file: UploadFile = File(...),
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db)
+):
+    if not file.content_type or not file.content_type.startswith("image/"):
+        raise HTTPException(status_code=400, detail="Avatar must be an image")
+
+    previous_avatar = current_user.avatar_url
+    current_user.avatar_url = save_avatar_upload(file, current_user.id)
+    db.commit()
+    db.refresh(current_user)
+    delete_static_asset(previous_avatar)
+    return current_user
+
+@app.delete("/api/users/me/avatar", response_model=schemas.UserResponse)
+def delete_current_user_avatar(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    previous_avatar = current_user.avatar_url
+    current_user.avatar_url = None
+    db.commit()
+    db.refresh(current_user)
+    delete_static_asset(previous_avatar)
     return current_user
 
 @app.get("/api/users", response_model=List[schemas.UserResponse])
@@ -171,7 +243,8 @@ def delete_user(user_id: int, request: Request, admin: models.User = Depends(get
     user = db.query(models.User).filter(models.User.id == user_id).first()
     if not user:
         raise HTTPException(status_code=404, detail="User not found")
-        
+
+    delete_static_asset(user.avatar_url)
     db.delete(user)
     db.commit()
     log_action(db, "DELETE_USER", "SUCCESS", user_id=admin.id, role=admin.role, target=f"U{user.id}", ip=request.client.host)
@@ -321,16 +394,53 @@ def get_logs(admin: models.User = Depends(get_admin_user), db: Session = Depends
 # --- AI ENDPOINT (MOCKED) ---
 
 @app.post("/api/analyze", response_model=schemas.AIAnalysisResponse)
-async def analyze_image(file: UploadFile = File(...)):
+async def analyze_image(
+    file: UploadFile = File(...),
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
     file_path = os.path.join(UPLOAD_DIR, file.filename)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
-    
-    await asyncio.sleep(2)
-    
-    return {
-        "title": "Logitech MX Master 3S Mouse",
-        "description": "Gently used, ideal ergonomic mouse for the office. Box and invoice are included.",
-        "quick_price": 2500,
-        "ideal_price": 3200
-    }
+
+    job = models.AnalysisJob(
+        user_id=resolve_session_user_id(authorization),
+        status="processing",
+        image_url=file.filename,
+        image_name=file.filename,
+        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+    )
+    db.add(job)
+    db.commit()
+    db.refresh(job)
+
+    try:
+        analysis = await asyncio.to_thread(
+            analyze_listing_image,
+            file_path,
+            file.content_type,
+            file.filename,
+        )
+        job.status = "completed"
+        job.result_json = analysis.model_dump()
+        db.commit()
+        db.refresh(job)
+        return {
+            "job_id": job.id,
+            "status": job.status,
+            **analysis.model_dump(),
+        }
+    except Exception as exc:
+        job.status = "failed"
+        job.error_message = str(exc)
+        db.commit()
+        db.refresh(job)
+        raise HTTPException(status_code=500, detail="AI analysis failed")
+
+
+@app.get("/api/analyze/jobs/{job_id}", response_model=schemas.AnalysisJobResponse)
+def get_analysis_job(job_id: int, db: Session = Depends(get_db)):
+    job = db.query(models.AnalysisJob).filter(models.AnalysisJob.id == job_id).first()
+    if not job:
+        raise HTTPException(status_code=404, detail="Analysis job not found")
+    return job

@@ -37,27 +37,22 @@ const Create = () => {
 
   const handleAnalyze = async (file) => {
     setStatus('analyzing');
-    
     let phraseIndex = 0;
     const interval = setInterval(() => {
       phraseIndex = (phraseIndex + 1) % loadingPhrases.length;
       setLoadingText(loadingPhrases[phraseIndex]);
     }, 1200);
-
-    const formData = new FormData();
-    formData.append('file', file);
     
     try {
-      // Mocked AI analyze call
-      setTimeout(() => {
-        setAiData({
-          title: 'Vintage Wooden Desk Chair',
-          description: 'Mid-century style solid wood desk chair in excellent condition.',
-          quick_price: 850,
-          ideal_price: 1100
-        });
-        setStatus('results');
-      }, 2000);
+      const data = await api.analyzeListing(file);
+      setAiData({
+        title: data.title,
+        description: data.description,
+        quick_price: data.quick_price,
+        market_price: data.market_price
+      });
+      setSelectedPrice(data.quick_price);
+      setStatus('results');
     } catch (error) {
       console.error('Analysis failed:', error);
       setStatus('idle');
@@ -196,13 +191,13 @@ const Create = () => {
                 </button>
                 
                 <button 
-                  onClick={() => setSelectedPrice(aiData.ideal_price)}
-                  className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${selectedPrice === aiData.ideal_price ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
+                  onClick={() => setSelectedPrice(aiData.market_price)}
+                  className={`relative p-8 rounded-[2.5rem] border-2 transition-all flex flex-col items-start text-left ${selectedPrice === aiData.market_price ? 'border-primary bg-primary/5 shadow-inner' : 'border-border bg-muted/10'}`}
                 >
-                  <Target size={24} className={selectedPrice === aiData.ideal_price ? 'text-primary' : 'text-muted-foreground/40'} />
-                  <span className="text-[9px] font-black uppercase tracking-[0.15em] mt-6 mb-2">Ideal Value</span>
-                  <span className="text-3xl font-black tracking-tighter">₺{aiData.ideal_price}</span>
-                  {selectedPrice === aiData.ideal_price && (
+                  <Target size={24} className={selectedPrice === aiData.market_price ? 'text-primary' : 'text-muted-foreground/40'} />
+                  <span className="text-[9px] font-black uppercase tracking-[0.15em] mt-6 mb-2">Market Value</span>
+                  <span className="text-3xl font-black tracking-tighter">₺{aiData.market_price}</span>
+                  {selectedPrice === aiData.market_price && (
                     <motion.div layoutId="check" className="absolute top-4 right-4 bg-primary text-white p-1.5 rounded-full shadow-lg">
                       <Check size={14} strokeWidth={4} />
                     </motion.div>

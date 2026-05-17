@@ -12,6 +12,7 @@ class User(Base):
     password_hash = Column(String)
     role = Column(String, default="user") # 'admin' or 'user'
     status = Column(String, default="active") # 'active' or 'suspended'
+    avatar_url = Column(String, nullable=True)
     location = Column(String, nullable=True)
     bio = Column(String, nullable=True)
     created_at = Column(DateTime, default=datetime.utcnow)
@@ -36,6 +37,20 @@ class Listing(Base):
     
     author_id = Column(Integer, ForeignKey("users.id"))
     author = relationship("User", back_populates="listings")
+
+class AnalysisJob(Base):
+    __tablename__ = "analysis_jobs"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    status = Column(String, default="queued") # queued, processing, completed, failed
+    image_url = Column(String)
+    image_name = Column(String, nullable=True)
+    model = Column(String, nullable=True)
+    result_json = Column(JSON, nullable=True)
+    error_message = Column(String, nullable=True)
+    created_at = Column(DateTime, default=datetime.utcnow)
+    updated_at = Column(DateTime, default=datetime.utcnow, onupdate=datetime.utcnow)
 
 class Message(Base):
     __tablename__ = "messages"

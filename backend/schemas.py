@@ -8,6 +8,14 @@ class UserBase(BaseModel):
     email: str
     location: Optional[str] = None
     bio: Optional[str] = None
+    avatar_url: Optional[str] = None
+
+
+class UserUpdate(BaseModel):
+    name: Optional[str] = None
+    email: Optional[str] = None
+    location: Optional[str] = None
+    bio: Optional[str] = None
 
 class UserCreate(UserBase):
     password: str
@@ -16,8 +24,6 @@ class UserResponse(UserBase):
     id: int
     role: str
     status: str
-    location: Optional[str] = None
-    bio: Optional[str] = None
     created_at: datetime
 
     class Config:
@@ -105,7 +111,30 @@ class MessageResponse(MessageBase):
 
 # --- AI Schemas ---
 class AIAnalysisResponse(BaseModel):
+    job_id: int
+    status: str
     title: str
     description: str
     quick_price: float
-    ideal_price: float
+    market_price: float
+    category: str
+    condition: str
+    confidence: float
+    needs_more_photos: bool = False
+    rationale: str
+    suggested_attributes: Optional[dict] = None
+
+class AnalysisJobResponse(BaseModel):
+    id: int
+    user_id: Optional[int] = None
+    status: str
+    image_url: str
+    image_name: Optional[str] = None
+    model: Optional[str] = None
+    result_json: Optional[dict] = None
+    error_message: Optional[str] = None
+    created_at: datetime
+    updated_at: datetime
+
+    class Config:
+        from_attributes = True

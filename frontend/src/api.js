@@ -8,6 +8,11 @@ const getAuthHeaders = () => {
   };
 };
 
+const getFormAuthHeaders = () => {
+  const token = localStorage.getItem('token');
+  return token ? { 'Authorization': `Bearer ${token}` } : {};
+};
+
 export const api = {
   // Auth
   login: async (email, password) => {
@@ -77,6 +82,22 @@ export const api = {
     return res.json();
   },
 
+  analyzeListing: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const token = localStorage.getItem('token');
+    const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
+
+    const res = await fetch(`${API_URL}/analyze`, {
+      method: 'POST',
+      headers,
+      body: formData
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   deleteListing: async (id) => {
     const res = await fetch(`${API_URL}/listings/${id}`, {
       method: 'DELETE',
@@ -119,6 +140,27 @@ export const api = {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  updateMeAvatar: async (file) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    const res = await fetch(`${API_URL}/users/me/avatar`, {
+      method: 'POST',
+      headers: getFormAuthHeaders(),
+      body: formData
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  deleteMeAvatar: async () => {
+    const res = await fetch(`${API_URL}/users/me/avatar`, {
+      method: 'DELETE',
+      headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
     return res.json();
