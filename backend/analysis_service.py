@@ -42,7 +42,8 @@ class ListingAnalysis(BaseModel):
     suggested_attributes: SuggestedAttributes = Field(default_factory=SuggestedAttributes)
 
 
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
+FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemma-4-26b-a4b-it")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
@@ -96,6 +97,19 @@ def _format_gemini_error(exc: Exception) -> str:
     if isinstance(exc, ValueError):
         return f"Gemini response invalid: {exc}"
     return f"Gemini request failed: {exc}"
+
+
+def _model_candidates() -> list[str]:
+    candidates = []
+    for model in [DEFAULT_MODEL, FALLBACK_MODEL]:
+        model = (model or "").strip()
+        if model and model not in candidates:
+            candidates.append(model)
+    return candidates
+
+
+def _is_rate_limit(exc: Exception) -> bool:
+    return isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 503}
 
 
 def _normalize_category(value: object) -> str:
@@ -192,16 +206,28 @@ def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], pr
         },
     }
 
-    request = urllib.request.Request(
-        f"{GEMINI_API_URL}/{DEFAULT_MODEL}:generateContent?key={api_key}",
-        data=json.dumps(payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    last_error: Exception | None = None
+    for model in _model_candidates():
+        request = urllib.request.Request(
+            f"{GEMINI_API_URL}/{model}:generateContent?key={api_key}",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
 
-    with urllib.request.urlopen(request, timeout=90) as response:
-        body = response.read().decode("utf-8")
-    return json.loads(body)
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                body = response.read().decode("utf-8")
+            return json.loads(body)
+        except Exception as exc:
+            last_error = exc
+            if _is_rate_limit(exc):
+                continue
+            raise
+
+    if last_error is not None:
+        raise last_error
+    raise RuntimeError("Gemini request failed")
 
 
 def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: str) -> ListingAnalysis:

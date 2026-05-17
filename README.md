@@ -29,7 +29,7 @@ camera in, item draft out, price options ready, publish with one decision.
 Set the backend env vars before starting the API:
 
 - `GOOGLE_API_KEY` or `GEMINI_API_KEY`
-- optional `GEMINI_MODEL=gemini-2.5-flash-lite`
+- optional `GEMINI_MODEL=gemma-4-31b-it` and `GEMINI_FALLBACK_MODEL=gemma-4-26b-a4b-it`
 
 If no key is present, the app falls back to mock analysis.
 

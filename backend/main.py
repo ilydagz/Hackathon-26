@@ -39,7 +39,8 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemma-4-26b-a4b-it")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "images")
 AVATAR_DIR = os.path.join(BASE_DIR, "static", "avatars")
@@ -130,6 +131,19 @@ def format_gemini_error(exc: Exception) -> str:
         return f"Gemini response invalid: {exc}"
     return f"Gemini request failed: {exc}"
 
+
+def gemini_model_candidates() -> List[str]:
+    candidates = []
+    for model in [GEMINI_MODEL, GEMINI_FALLBACK_MODEL]:
+        model = (model or "").strip()
+        if model and model not in candidates:
+            candidates.append(model)
+    return candidates
+
+
+def is_gemini_rate_limit(exc: Exception) -> bool:
+    return isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 503}
+
 def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> dict:
     api_key = get_gemini_api_key()
     request_payload = {
@@ -149,23 +163,34 @@ def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> di
         },
     }
 
-    request = urllib.request.Request(
-        f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}",
-        data=json.dumps(request_payload).encode("utf-8"),
-        headers={"Content-Type": "application/json"},
-        method="POST",
-    )
+    last_error: Optional[Exception] = None
+    for model in gemini_model_candidates():
+        request = urllib.request.Request(
+            f"{GEMINI_API_URL}/{model}:generateContent?key={api_key}",
+            data=json.dumps(request_payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST",
+        )
 
-    try:
-        with urllib.request.urlopen(request, timeout=90) as response:
-            body = response.read().decode("utf-8")
-        response_json = json.loads(body)
-        text = extract_gemini_text(response_json).strip()
-        if text.startswith("```"):
-            text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE | re.DOTALL).strip()
-        return json.loads(text)
-    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError(format_gemini_error(exc)) from exc
+        try:
+            with urllib.request.urlopen(request, timeout=90) as response:
+                body = response.read().decode("utf-8")
+            response_json = json.loads(body)
+            text = extract_gemini_text(response_json).strip()
+            if text.startswith("```"):
+                text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE | re.DOTALL).strip()
+            return json.loads(text)
+        except Exception as exc:
+            last_error = exc
+            if is_gemini_rate_limit(exc):
+                continue
+            if isinstance(exc, (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError)):
+                raise RuntimeError(format_gemini_error(exc)) from exc
+            raise RuntimeError(format_gemini_error(exc)) from exc
+
+    if last_error is not None:
+        raise RuntimeError(format_gemini_error(last_error)) from last_error
+    raise RuntimeError("Gemini request failed")
 
 
 def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], filename: str):
