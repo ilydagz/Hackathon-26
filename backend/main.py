@@ -225,7 +225,7 @@ def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], fi
         job = db.query(models.AnalysisJob).filter(models.AnalysisJob.id == job_id).first()
         if job:
             job.status = "failed"
-            job.error_message = "AI was unable to analyze this photo. Try a clearer image or upload another item."
+            job.error_message = str(exc)
             db.commit()
         print(f"Analysis job {job_id} failed: {exc}")
     finally:

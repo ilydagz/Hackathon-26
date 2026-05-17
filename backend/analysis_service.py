@@ -261,7 +261,7 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "- image_quality\n"
         "- quality_note\n"
         "- rationale\n"
-        "- suggested_attributes\n"
+        "- suggested_attributes (JSON object with optional keys: brand, model, size, material, color, warranty, dimensions, notes)\n"
         "Never invent brand/model/condition.\n"
         "If image is blurry, dark, cropped, or partial, set image_quality to poor or unclear, lower confidence, and recommend retake.\n"
         "If evidence is weak, set needs_more_photos true and retake_recommended true.\n"
@@ -280,6 +280,11 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
             .get("text", "")
         )
         payload = _extract_json_payload(text)
+        
+        # Guard against Gemini returning a list for suggested_attributes
+        if isinstance(payload.get("suggested_attributes"), list):
+            payload["suggested_attributes"] = {"notes": ", ".join(str(v) for v in payload["suggested_attributes"])}
+
         payload["title"] = _ensure_text(payload.get("title"), "Second-Hand Item")
         payload["description"] = _ensure_text(
             payload.get("description"),
