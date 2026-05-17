@@ -312,9 +312,9 @@ def build_feed_response(db: Session, current_user: Optional[models.User], catego
         events = db.query(models.FeedEvent).filter(models.FeedEvent.user_id == current_user.id).order_by(desc(models.FeedEvent.timestamp)).limit(400).all()
 
     global_popularity = Counter()
-    for row in db.query(models.FeedEvent.listing_id, models.FeedEvent.event_type).filter(models.FeedEvent.listing_id.isnot(None)).all():
-        if row.listing_id:
-            global_popularity[row.listing_id] += 1 if row.event_type != "impression" else 0.3
+    for listing_id, event_type in db.query(models.FeedEvent.listing_id, models.FeedEvent.event_type).filter(models.FeedEvent.listing_id.isnot(None)).all():
+        if listing_id:
+            global_popularity[listing_id] += 1 if event_type != "impression" else 0.3
 
     profile = build_feed_profile(events, listings_by_id) if current_user else {
         "category_scores": Counter(),

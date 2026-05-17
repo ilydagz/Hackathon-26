@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from datetime import datetime
 from typing import Optional, List
 
@@ -131,6 +131,31 @@ class ChatAssistResponse(BaseModel):
     tone_label: str
     summary: str
     suggestions: List[ChatAssistSuggestion]
+
+class FeedEventCreate(BaseModel):
+    event_type: str
+    listing_id: Optional[int] = None
+    category: Optional[str] = None
+    query: Optional[str] = None
+    metadata: Optional[dict] = None
+
+
+class FeedListingResponse(ListingResponse):
+    feed_score: float
+    feed_reason: str
+    feed_badge: Optional[str] = None
+    feed_signals: Optional[List[str]] = None
+
+
+class FeedInsightsResponse(BaseModel):
+    top_categories: List[dict] = Field(default_factory=list)
+    preferred_price_range: Optional[dict] = None
+    summary: str
+
+
+class FeedResponse(BaseModel):
+    items: List[FeedListingResponse]
+    insights: FeedInsightsResponse
 
 # --- AI Schemas ---
 class AIAnalysisResponse(BaseModel):

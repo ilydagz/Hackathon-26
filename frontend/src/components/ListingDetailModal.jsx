@@ -1,17 +1,16 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
-import ConfirmModal from './ConfirmModal';
 
 const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
   const { t } = useLanguage();
   const { addNotification } = useNotifications();
   const [loading, setLoading] = useState(false);
   const [isFavorited, setIsFavorited] = useState(false);
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const currentUserId = Number(localStorage.getItem('userId'));
+  const isOwner = listing?.author_id === currentUserId;
 
   const getAvatarSrc = (avatarUrl) => {
     if (!avatarUrl) return '';
@@ -29,15 +28,19 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
       }
     };
     if (isOpen) checkFavorite();
-  }, [listing, isOpen]);
+  }, [listing, isOpen, isOwner]);
 
   if (!listing) return null;
-
-  const isOwner = listing.author_id === currentUserId;
 
   const handleToggleFavorite = async () => {
     try {
       await api.toggleFavorite(listing.id);
+      void api.recordFeedEvent?.({
+        event_type: 'favorite',
+        listing_id: listing.id,
+        category: listing.category,
+        metadata: { source: 'listing_detail' }
+      });
       setIsFavorited(!isFavorited);
       onAction?.(); // Trigger refresh if in Favorites page
     } catch (err) {
@@ -85,6 +88,12 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
 
   const handleContact = async () => {
     try {
+      void api.recordFeedEvent?.({
+        event_type: 'chat_start',
+        listing_id: listing.id,
+        category: listing.category,
+        metadata: { source: 'listing_detail' }
+      });
       await api.sendMessage({
         receiver_id: listing.author_id,
         listing_id: listing.id,

@@ -237,6 +237,27 @@ export const api = {
     return res.json();
   },
 
+  getFeed: async (category = 'all', search = '') => {
+    const params = new URLSearchParams();
+    if (category !== 'all') params.append('category', category);
+    if (search) params.append('search', search);
+    const res = await fetch(`${API_URL}/feed?${params.toString()}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
+  recordFeedEvent: async (eventData) => {
+    const res = await fetch(`${API_URL}/feed/events`, {
+      method: 'POST',
+      headers: getAuthHeaders(),
+      body: JSON.stringify(eventData)
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   getChatAssist: async (listingId, otherUserId) => {
     const params = new URLSearchParams({ other_user_id: String(otherUserId) });
     const res = await fetch(`${API_URL}/chats/${listingId}/assist?${params.toString()}`, {

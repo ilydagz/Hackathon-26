@@ -82,3 +82,16 @@ class Log(Base):
     target = Column(String, nullable=True) # e.g. 'P101', 'U002'
     result = Column(String) # 'SUCCESS', 'FAILED'
     ip = Column(String, nullable=True)
+
+
+class FeedEvent(Base):
+    __tablename__ = "feed_events"
+
+    id = Column(Integer, primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    event_type = Column(String, index=True) # impression, open, favorite, search, category, chat_start
+    listing_id = Column(Integer, ForeignKey("listings.id"), nullable=True, index=True)
+    category = Column(String, nullable=True, index=True)
+    query = Column(String, nullable=True)
+    event_metadata = Column("metadata", JSON, nullable=True)
+    timestamp = Column(DateTime, default=datetime.utcnow, index=True)
