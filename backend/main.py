@@ -147,6 +147,67 @@ def log_action(db: Session, action: str, result: str, user_id: Optional[int] = N
     db.add(new_log)
     db.commit()
 
+def build_chat_assist(listing: models.Listing, messages: List[models.Message], current_user: models.User, other_user: models.User) -> dict:
+    last_buyer_message = next(
+        (
+            msg.content
+            for msg in reversed(messages)
+            if msg.sender_id == other_user.id
+        ),
+        "",
+    )
+    listing_price = listing.selected_price or 0
+    tone_label = "Friendly"
+    summary = f"Item: {listing.title}. Asking ₺{int(listing_price)}."
+
+    lowered = (last_buyer_message or "").lower()
+    if any(word in lowered for word in ["lowest", "best price", "discount", "cheaper", "less"]):
+        tone_label = "Price push"
+        summary = "Buyer asks for lower price. Keep room for negotiation."
+        suggestions = [
+            {"label": "Counter", "text": f"I can do ₺{int(max(listing_price * 0.95, listing_price - 50))} if you can pick up today."},
+            {"label": "Firm", "text": f"Price is already fair at ₺{int(listing_price)}. Happy to keep it available for you."},
+            {"label": "Close", "text": "If that works for you, I can hold it until pickup time."},
+        ]
+    elif any(word in lowered for word in ["pickup", "pick up", "meet", "available", "today", "when"]):
+        tone_label = "Availability"
+        summary = "Buyer wants timing or pickup details."
+        suggestions = [
+            {"label": "Availability", "text": "Yes, I am available today after 6 PM."},
+            {"label": "Pickup", "text": "Pickup works best in a public place near me."},
+            {"label": "Confirm", "text": "Tell me what time works for you and I will confirm."},
+        ]
+    elif any(word in lowered for word in ["condition", "wear", "damage", "scratch", "photo"]):
+        tone_label = "Trust check"
+        summary = "Buyer wants more detail on condition."
+        suggestions = [
+            {"label": "Condition", "text": "Condition is as shown in photos, with normal second-hand wear."},
+            {"label": "Detail", "text": "I can share one more photo if you want a closer look."},
+            {"label": "Assure", "text": "Happy to answer anything else before you decide."},
+        ]
+    else:
+        tone_label = "Friendly"
+        summary = "Keep reply warm, short, and open-ended."
+        suggestions = [
+            {"label": "Warm reply", "text": f"Hi, thanks for your message about {listing.title}. How can I help?"},
+            {"label": "Ready", "text": "I am happy to answer questions or arrange pickup."},
+            {"label": "Next step", "text": "Let me know what works best for you."},
+        ]
+
+    if current_user.id != listing.author_id:
+        summary = "You are in buyer role. Keep reply simple and direct."
+        suggestions = [
+            {"label": "Ask", "text": f"Hi, is {listing.title} still available?"},
+            {"label": "Pickup", "text": "When could we meet for pickup?"},
+            {"label": "Offer", "text": f"Would you consider ₺{int(max(listing_price * 0.9, listing_price - 100))}?"},
+        ]
+
+    return {
+        "tone_label": tone_label,
+        "summary": summary,
+        "suggestions": suggestions[:3],
+    }
+
 async def get_current_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     if not authorization or not authorization.startswith("Bearer "):
         raise HTTPException(status_code=401, detail="Invalid auth header")
@@ -429,6 +490,30 @@ def get_chats(current_user: models.User = Depends(get_current_user), db: Session
             seen_pairs.add(pair)
             latest_msgs.append(m)
     return latest_msgs
+
+
+@app.get("/api/chats/{listing_id}/assist", response_model=schemas.ChatAssistResponse)
+def get_chat_assist(
+    listing_id: int,
+    other_user_id: int,
+    current_user: models.User = Depends(get_current_user),
+    db: Session = Depends(get_db),
+):
+    listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+
+    other_user = db.query(models.User).filter(models.User.id == other_user_id).first()
+    if not other_user:
+        raise HTTPException(status_code=404, detail="Chat user not found")
+
+    messages = db.query(models.Message).filter(
+        models.Message.listing_id == listing_id,
+        ((models.Message.sender_id == current_user.id) & (models.Message.receiver_id == other_user_id)) |
+        ((models.Message.sender_id == other_user_id) & (models.Message.receiver_id == current_user.id))
+    ).order_by(models.Message.timestamp).all()
+
+    return build_chat_assist(listing, messages, current_user, other_user)
 
 
 # --- LOG ENDPOINTS ---

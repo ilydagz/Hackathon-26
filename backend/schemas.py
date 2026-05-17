@@ -117,6 +117,21 @@ class MessageResponse(MessageBase):
     class Config:
         from_attributes = True
 
+
+class ChatAssistRequest(BaseModel):
+    other_user_id: int
+
+
+class ChatAssistSuggestion(BaseModel):
+    text: str
+    label: str
+
+
+class ChatAssistResponse(BaseModel):
+    tone_label: str
+    summary: str
+    suggestions: List[ChatAssistSuggestion]
+
 # --- AI Schemas ---
 class AIAnalysisResponse(BaseModel):
     job_id: int

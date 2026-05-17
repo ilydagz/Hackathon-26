@@ -237,6 +237,15 @@ export const api = {
     return res.json();
   },
 
+  getChatAssist: async (listingId, otherUserId) => {
+    const params = new URLSearchParams({ other_user_id: String(otherUserId) });
+    const res = await fetch(`${API_URL}/chats/${listingId}/assist?${params.toString()}`, {
+      headers: getAuthHeaders()
+    });
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   // My Listings & Favorites (Frontend handled as backend is missing endpoints)
   getMyListings: async () => {
     const currentUserId = Number(localStorage.getItem('userId'));

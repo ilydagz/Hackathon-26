@@ -173,6 +173,11 @@ export const translations = {
     'chat.noChats': 'No active chats',
     'chat.select': 'Select a chat to start messaging',
     'chat.noMessages': 'No messages yet. Say hi!',
+    'chat.assistTitle': 'Reply assistant',
+    'chat.assistSummary': 'Suggested reply based on latest message and listing context.',
+    'chat.assistLoading': 'Loading reply ideas...',
+    'chat.assistEmpty': 'No suggestions yet.',
+    'chat.assistTone': 'Tone',
 
     // Settings & Notifications
     'settings.title': 'Application Settings',
@@ -455,6 +460,11 @@ export const translations = {
     'chat.noChats': 'Aktif sohbet yok',
     'chat.select': 'Mesajlaşmaya başlamak için bir sohbet seçin',
     'chat.noMessages': 'Henüz mesaj yok. Merhaba deyin!',
+    'chat.assistTitle': 'Yanıt asistanı',
+    'chat.assistSummary': 'Son mesaja ve ilan bağlamına göre öneriler.',
+    'chat.assistLoading': 'Yanıt fikirleri yükleniyor...',
+    'chat.assistEmpty': 'Henüz öneri yok.',
+    'chat.assistTone': 'Ton',
 
     // Settings & Notifications
     'settings.title': 'Uygulama Ayarları',

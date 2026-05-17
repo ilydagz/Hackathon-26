@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../api';
@@ -11,6 +11,8 @@ const Chat = () => {
   const [message, setMessage] = useState('');
   const [showEmojis, setShowEmojis] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [assist, setAssist] = useState(null);
+  const [assistLoading, setAssistLoading] = useState(false);
   const scrollRef = useRef(null);
   const fileInputRef = useRef(null);
 
@@ -39,8 +41,8 @@ const Chat = () => {
       try {
         const data = await api.getChats();
         setChats(data);
-        if (data.length > 0 && !activeChat) {
-          setActiveChat(data[0]);
+        if (data.length > 0) {
+          setActiveChat((prev) => prev || data[0]);
         }
       } catch (err) {
         console.error(err);
@@ -53,22 +55,50 @@ const Chat = () => {
 
   useEffect(() => {
     if (activeChat) {
-      setMessages([]);
-      const fetchMessages = async () => {
+      let cancelled = false;
+      const loadChat = async () => {
+        setAssistLoading(true);
         try {
           const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
-          const data = await api.getMessages(activeChat.listing_id, otherUserId);
-          setMessages(data);
+          const messageData = await api.getMessages(activeChat.listing_id, otherUserId);
+          if (!cancelled) {
+            setMessages(messageData);
+          }
         } catch (err) {
           console.error(err);
         }
+
+        try {
+          const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
+          const assistData = await api.getChatAssist(activeChat.listing_id, otherUserId);
+          if (!cancelled) {
+            setAssist(assistData);
+          }
+        } catch (err) {
+          console.error(err);
+          if (!cancelled) {
+            setAssist(null);
+          }
+        }
+
+        if (!cancelled) {
+          setAssistLoading(false);
+        }
       };
-      fetchMessages();
-      // Poll for new messages every 3 seconds
-      const interval = setInterval(fetchMessages, 3000);
-      return () => clearInterval(interval);
+
+      const timer = setTimeout(() => {
+        void loadChat();
+      }, 0);
+      const interval = setInterval(() => {
+        void loadChat();
+      }, 3000);
+      return () => {
+        cancelled = true;
+        clearTimeout(timer);
+        clearInterval(interval);
+      };
     }
-  }, [activeChat]);
+  }, [activeChat, currentUserId]);
 
   useEffect(() => {
     if (scrollRef.current) {
@@ -97,6 +127,10 @@ const Chat = () => {
   const addEmoji = (emoji) => {
     setMessage(prev => prev + emoji);
     setShowEmojis(false);
+  };
+
+  const insertSuggestion = (text) => {
+    setMessage(text);
   };
 
   const handleImageUpload = (e) => {
@@ -203,6 +237,40 @@ const Chat = () => {
             </div>
 
             <div className="p-sm md:p-lg bg-surface-card border-t border-border-subtle relative">
+              <div className="mb-3 rounded-2xl border border-border-subtle bg-surface-muted/60 p-3 md:p-4">
+                <div className="flex items-center justify-between gap-3 mb-2">
+                  <div>
+                    <p className="font-title-card text-title-card text-on-surface">{t('chat.assistTitle')}</p>
+                    <p className="font-body-sm text-body-sm text-text-secondary">{t('chat.assistSummary')}</p>
+                  </div>
+                  <span className="text-[10px] font-black uppercase tracking-[0.2em] text-primary/70">
+                    {assist?.tone_label || t('chat.assistTone')}
+                  </span>
+                </div>
+                {assistLoading && (
+                  <p className="text-sm text-text-secondary">{t('chat.assistLoading')}</p>
+                )}
+                {!assistLoading && assist?.summary && (
+                  <p className="text-sm text-text-secondary mb-3">{assist.summary}</p>
+                )}
+                {!assistLoading && assist?.suggestions?.length > 0 ? (
+                  <div className="flex flex-wrap gap-2">
+                    {assist.suggestions.map((item) => (
+                      <button
+                        key={`${item.label}-${item.text}`}
+                        type="button"
+                        onClick={() => insertSuggestion(item.text)}
+                        className="rounded-full border border-primary/20 bg-white px-3 py-2 text-left shadow-sm transition-all hover:border-primary/40 hover:bg-primary/5"
+                      >
+                        <span className="block text-[10px] font-black uppercase tracking-[0.18em] text-primary">{item.label}</span>
+                        <span className="block mt-1 text-sm text-on-surface">{item.text}</span>
+                      </button>
+                    ))}
+                  </div>
+                ) : !assistLoading ? (
+                  <p className="text-sm text-text-secondary">{t('chat.assistEmpty')}</p>
+                ) : null}
+              </div>
               <AnimatePresence>
                 {showEmojis && (
                   <motion.div 
