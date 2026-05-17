@@ -201,6 +201,172 @@ OTHER_ITEMS = [
     ("Penguin", "used book bundle", 550, "books"),
 ]
 
+CATEGORY_SUBCATEGORY_PLAN = [
+    ("electronics", "phones", 12),
+    ("electronics", "laptops", 8),
+    ("electronics", "audio", 6),
+    ("electronics", "cameras", 4),
+    ("electronics", "gaming", 4),
+    ("furniture", "tables", 5),
+    ("furniture", "chairs", 6),
+    ("furniture", "sofas", 5),
+    ("furniture", "beds", 4),
+    ("furniture", "storage", 4),
+    ("clothing", "dress", 5),
+    ("clothing", "pants", 5),
+    ("clothing", "shirts", 5),
+    ("clothing", "shoes", 4),
+    ("clothing", "accessories", 3),
+    ("decor", "lighting", 4),
+    ("decor", "wall_art", 3),
+    ("decor", "rugs", 3),
+    ("decor", "vases", 2),
+    ("other", "books", 3),
+    ("other", "sports", 3),
+    ("other", "toys", 2),
+]
+
+SUBCATEGORY_MODELS = {
+    "phones": [
+        ("Apple", "iPhone 15", 42000),
+        ("Apple", "iPhone 14", 36000),
+        ("Samsung", "Galaxy S24", 34000),
+        ("Google", "Pixel 8", 29500),
+        ("OnePlus", "OnePlus 12", 25000),
+        ("Xiaomi", "Redmi Note 13", 18000),
+        ("Oppo", "Reno 11", 16500),
+        ("Motorola", "Edge 50", 15000),
+    ],
+    "laptops": [
+        ("Apple", "MacBook Air M2", 32000),
+        ("Dell", "XPS 13", 22000),
+        ("Lenovo", "ThinkPad X1 Carbon", 24000),
+        ("HP", "Spectre x360", 21000),
+        ("ASUS", "ZenBook 14", 20500),
+        ("Microsoft", "Surface Laptop 5", 24000),
+    ],
+    "audio": [
+        ("Sony", "WH-1000XM5", 7200),
+        ("Bose", "QuietComfort 45", 6800),
+        ("Apple", "AirPods Pro 2", 5400),
+        ("JBL", "Tune 760NC", 2100),
+        ("Sennheiser", "Momentum 4", 6000),
+    ],
+    "cameras": [
+        ("Canon", "EOS R50", 18000),
+        ("Sony", "Alpha a6400", 24000),
+        ("Fujifilm", "X-T30 II", 22000),
+        ("Nikon", "Z30", 16000),
+        ("GoPro", "Hero 12 Black", 12000),
+    ],
+    "gaming": [
+        ("Sony", "PlayStation 5 Slim", 32000),
+        ("Nintendo", "Switch OLED", 13500),
+        ("Microsoft", "Xbox Series S", 12000),
+        ("LG", "27-inch Gaming Monitor", 8500),
+        ("ASUS", "TUF Gaming Monitor", 9000),
+    ],
+    "tables": [
+        ("IKEA", "dining table", 7600),
+        ("West Elm", "coffee table", 9200),
+        ("JYSK", "side table", 2800),
+        ("Doğtaş", "desk table", 6500),
+    ],
+    "chairs": [
+        ("IKEA", "MARKUS office chair", 4200),
+        ("Tepe Home", "desk chair", 4800),
+        ("Muuto", "lounge chair", 15800),
+        ("Bellona", "accent chair", 5400),
+    ],
+    "sofas": [
+        ("Article", "Sven sofa", 18500),
+        ("Bellona", "three-seater sofa", 14200),
+        ("West Elm", "loveseat", 16500),
+        ("IKEA", "sectional sofa", 17800),
+    ],
+    "beds": [
+        ("IKEA", "MALM bed frame", 6800),
+        ("Doğtaş", "upholstered bed frame", 9800),
+        ("Bellona", "platform bed", 11200),
+        ("Tepe Home", "double bed base", 7400),
+    ],
+    "storage": [
+        ("IKEA", "KALLAX shelf", 3100),
+        ("Doğtaş", "TV unit", 6500),
+        ("JYSK", "wardrobe", 8800),
+        ("Muji", "storage cabinet", 4200),
+    ],
+    "dress": [
+        ("Zara", "linen dress", 1100),
+        ("Mango", "wrap dress", 2400),
+        ("COS", "minimal midi dress", 3600),
+        ("H&M", "summer dress", 900),
+    ],
+    "pants": [
+        ("Levi's", "501 straight jeans", 1700),
+        ("Uniqlo", "tailored trousers", 900),
+        ("Adidas", "track pants", 1400),
+        ("Massimo Dutti", "slim fit trousers", 2200),
+    ],
+    "shirts": [
+        ("Nike", "Tech Fleece hoodie", 1800),
+        ("Uniqlo", "supima cotton shirt", 650),
+        ("Zara", "linen shirt", 1100),
+        ("COS", "overshirt", 1700),
+    ],
+    "shoes": [
+        ("Nike", "Air Force 1", 2800),
+        ("Adidas", "Stan Smith", 2200),
+        ("Converse", "Chuck 70", 1900),
+        ("Vans", "Old Skool", 1600),
+    ],
+    "accessories": [
+        ("Coach", "crossbody bag", 4200),
+        ("Zara", "leather belt", 850),
+        ("Ray-Ban", "sunglasses", 2600),
+        ("Nike", "cap", 700),
+    ],
+    "lighting": [
+        ("IKEA", "table lamp", 950),
+        ("Maison du Monde", "pendant light", 1900),
+        ("West Elm", "floor lamp", 2600),
+        ("Habitat", "bedside lamp", 1200),
+    ],
+    "wall_art": [
+        ("Zara Home", "abstract wall art", 880),
+        ("West Elm", "framed print", 2600),
+        ("H&M Home", "canvas wall art", 2100),
+        ("Ferm Living", "poster frame", 3400),
+    ],
+    "rugs": [
+        ("H&M Home", "woven rug", 2100),
+        ("Muuto", "area rug", 3800),
+        ("IKEA", "small rug", 800),
+        ("West Elm", "textured rug", 4200),
+    ],
+    "vases": [
+        ("Zara Home", "ceramic vase", 880),
+        ("Ferm Living", "stoneware vase", 2400),
+        ("IKEA", "glass vase", 450),
+        ("Habitat", "decor vase", 1200),
+    ],
+    "books": [
+        ("Penguin", "used book bundle", 550),
+        ("Oxford", "textbook lot", 900),
+        ("Dostoyevsky", "classic novel set", 750),
+    ],
+    "sports": [
+        ("Trek", "mountain bike", 15500),
+        ("Spalding", "basketball hoop", 3900),
+        ("Nike", "yoga mat set", 650),
+    ],
+    "toys": [
+        ("LEGO", "creator set", 1400),
+        ("Hasbro", "board game bundle", 900),
+        ("Disney", "plush toy bundle", 700),
+    ],
+}
+
 PHONE_COLORS = ["Black", "Green", "Blue", "Silver", "Graphite", "Purple"]
 LAPTOP_COLORS = ["Silver", "Space Gray", "Black", "Blue"]
 AUDIO_COLORS = ["Black", "White", "Blue", "Silver"]
@@ -531,30 +697,152 @@ def make_other_listing(rng):
     }
 
 
-def build_listings(db, users):
-    category_plan = [
-        ("electronics", 35),
-        ("furniture", 25),
-        ("clothing", 20),
-        ("decor", 10),
-        ("other", 10),
-    ]
-
-    builders = {
-        "electronics": [
-            (make_phone_listing, 0.48),
-            (make_laptop_listing, 0.18),
-            (make_audio_listing, 0.14),
-            (make_gaming_listing, 0.1),
-            (make_camera_listing, 0.06),
-            (make_wearable_listing, 0.04),
+def build_catalog_listing(rng, category, subcategory):
+    brand, item, base_price = rng.choice(SUBCATEGORY_MODELS[subcategory])
+    condition = condition_roll(rng)
+    color_pool = {
+        "phones": PHONE_COLORS,
+        "laptops": LAPTOP_COLORS,
+        "audio": AUDIO_COLORS,
+        "cameras": ["Black", "Silver", "White"],
+        "gaming": ["Black", "White", "Red"],
+        "tables": FURNITURE_COLORS,
+        "chairs": FURNITURE_COLORS,
+        "sofas": FURNITURE_COLORS,
+        "beds": FURNITURE_COLORS,
+        "storage": FURNITURE_COLORS,
+        "dress": CLOTHING_COLORS,
+        "pants": CLOTHING_COLORS,
+        "shirts": CLOTHING_COLORS,
+        "shoes": ["Black", "White", "Blue", "Grey"],
+        "accessories": ["Black", "Brown", "Gold", "Silver"],
+        "lighting": DECOR_COLORS,
+        "wall_art": DECOR_COLORS,
+        "rugs": DECOR_COLORS,
+        "vases": DECOR_COLORS,
+        "books": ["Mixed"],
+        "sports": ["Black", "Blue", "Red"],
+        "toys": ["Mixed"],
+    }
+    color = rng.choice(color_pool.get(subcategory, ["Black"]))
+    extras = {
+        "phones": [
+            "Battery health is strong and the screen is clean.",
+            "Unlocked and reset, with everything tested.",
+            "Normal light wear only, no cracks visible.",
         ],
-        "furniture": [(make_furniture_listing, 1.0)],
-        "clothing": [(make_clothing_listing, 1.0)],
-        "decor": [(make_decor_listing, 1.0)],
-        "other": [(make_other_listing, 1.0)],
+        "laptops": [
+            "Great for work, study, or creative use.",
+            "Battery still holds well for daily use.",
+            "Runs smoothly and has a clean keyboard.",
+        ],
+        "audio": [
+            "Sound quality is crisp and the ear pads are clean.",
+            "Pairing works instantly and battery is healthy.",
+            "Used lightly for commuting and work calls.",
+        ],
+        "cameras": [
+            "Lens and body are both clean.",
+            "Great for content creation or travel.",
+            "Carefully stored and lightly used.",
+        ],
+        "gaming": [
+            "Perfect for weekend gaming sessions.",
+            "Barely used and fully tested.",
+            "Great pickup for a first gaming setup.",
+        ],
+        "tables": ["Solid and practical for everyday use.", "Fits well in a compact apartment or office."],
+        "chairs": ["Has light cosmetic wear but feels sturdy.", "Recently cleaned and ready for pickup."],
+        "sofas": ["Comfortable and ready for a new living room.", "Nice shape with only normal wear."],
+        "beds": ["Stable frame and ready to assemble.", "Good condition with normal surface wear."],
+        "storage": ["Plenty of storage and a clean finish.", "Fits well in smaller spaces."],
+        "dress": ["Only worn a handful of times.", "Great for layering or everyday wear."],
+        "pants": ["Clean fit and ready for a new closet.", "Comfortable and in good condition."],
+        "shirts": ["No stains or tears noticed.", "Easy to style and in good shape."],
+        "shoes": ["Soles still look strong.", "Good everyday pair with normal wear."],
+        "accessories": ["A simple piece that still looks sharp.", "Good condition and easy to pair."],
+        "lighting": ["Adds a clean look to any room.", "Works well for apartments and small spaces."],
+        "wall_art": ["Looks great on a neutral wall.", "Easy to place in a living room or hallway."],
+        "rugs": ["Soft underfoot and easy to place.", "Adds warmth without overpowering a room."],
+        "vases": ["Easy to place on shelves or side tables.", "Nice accent piece with no major flaws."],
+        "books": ["Useful for a quick reading bundle.", "Good mix for shelf or gift use."],
+        "sports": ["Fully working and ready for pickup.", "Great value compared with buying new."],
+        "toys": ["Useful everyday item with normal wear.", "A practical bundle for someone who needs it."],
+    }
+    accessories = {
+        "phones": ["original box and charging cable", "a clear case", "charger and unused cable"],
+        "laptops": ["charger and sleeve", "original charger and box", "power adapter"],
+        "audio": ["case and cable", "charging cable", "original box"],
+        "cameras": ["battery and charger", "camera bag", "lens cap"],
+        "gaming": ["controller and cable", "power cable", "box and cable"],
+        "tables": ["assembly screws", "no extras", "instruction sheet"],
+        "chairs": ["chair pads", "no extras", "assembly screws"],
+        "sofas": ["matching cushions", "no extras", "care sheet"],
+        "beds": ["assembly screws", "manual", "no extras"],
+        "storage": ["shelf pins", "no extras", "assembly guide"],
+        "dress": ["original tag", "care label intact", "no extras"],
+        "pants": ["belt included", "care tag", "no extras"],
+        "shirts": ["zip works well", "care label intact", "no extras"],
+        "shoes": ["shoe box", "extra laces", "no extras"],
+        "accessories": ["dust bag", "care tag", "no extras"],
+        "lighting": ["mounting kit", "no extras", "hardware"],
+        "wall_art": ["hanging hardware", "original packaging", "no extras"],
+        "rugs": ["care tag", "no extras", "rug pad"],
+        "vases": ["original packaging", "no extras", "care tag"],
+        "books": ["no extras", "bookmarks", "mixed set"],
+        "sports": ["manual", "no extras", "pump"],
+        "toys": ["box", "manual", "no extras"],
+    }
+    description = build_description(
+        condition,
+        brand,
+        item,
+        rng.choice(extras.get(subcategory, ["Ready for pickup."])),
+        rng.choice(accessories.get(subcategory, ["no extras"])),
+    )
+    title = f"{brand} {item}".replace("  ", " ")
+    selected_price = price_with_noise(rng, base_price, condition)
+    common_attrs = {
+        "brand": brand,
+        "color": color,
+        "notes": rng.choice(["Clean item", "Ready to use", "Normal second-hand wear"]),
     }
 
+    if category == "electronics":
+        if subcategory == "phones":
+            common_attrs.update({"storage": rng.choice(["64GB", "128GB", "256GB", "512GB"]), "warranty": rng.choice(["No", "1 month", "3 months", "Box included"])})
+        elif subcategory == "laptops":
+            common_attrs.update({"ram": rng.choice(["8GB", "16GB", "32GB"]), "storage": rng.choice(["256GB SSD", "512GB SSD", "1TB SSD"]), "warranty": rng.choice(["No", "Yes", "Seller 1 month"])})
+        elif subcategory == "audio":
+            common_attrs.update({"warranty": rng.choice(["No", "Yes", "Unknown"]), "notes": rng.choice(["Wireless", "Noise cancelling", "Bluetooth"])})
+        elif subcategory == "cameras":
+            common_attrs.update({"notes": rng.choice(["Great autofocus", "Vlogging ready", "Clean sensor"])})
+        elif subcategory == "gaming":
+            common_attrs.update({"notes": rng.choice(["Works great", "Clean setup", "Ready to use"])})
+    elif category == "furniture":
+        common_attrs.update({"material": rng.choice(["Wood", "Metal", "Fabric", "MDF", "Oak", "Walnut"]), "dimensions": rng.choice(["80x80x75 cm", "120x60x75 cm", "160x90x75 cm", "200x90x80 cm", "60x60x90 cm"]), "room": rng.choice(["living room", "office", "dining area", "bedroom"])})
+    elif category == "clothing":
+        common_attrs.update({"size": rng.choice(["XS", "S", "M", "L", "XL", "32", "34", "36", "38", "40"]), "material": rng.choice(["Cotton", "Polyester", "Wool", "Linen", "Denim", "Fleece"]), "fit": rng.choice(["Slim", "Regular", "Relaxed"])})
+    elif category == "decor":
+        common_attrs.update({"material": rng.choice(["Ceramic", "Glass", "Wood", "Metal", "Cotton", "Wool"]), "style": rng.choice(["minimal", "modern", "warm", "vintage", "contemporary"]), "dimensions": rng.choice(["20 cm", "30 cm", "45 cm", "60 cm", "80 cm"])})
+    elif category == "other":
+        common_attrs.update({"notes": rng.choice(["Clean item", "Works well", "Good pickup", "Ready to use"])})
+
+    return {
+        "title": title,
+        "description": description,
+        "selected_price": selected_price,
+        "image_url": "demo.jpg",
+        "category": category,
+        "subcategory": subcategory,
+        "condition": condition,
+        "status": status_roll(rng),
+        "attributes": common_attrs,
+    }
+
+
+def build_listings(db, users):
+    created = []
     author_pools = {
         "electronics": [users["phonefan@example.com"], users["sellersam@example.com"]],
         "furniture": [users["homestylist@example.com"], users["sellersam@example.com"]],
@@ -563,12 +851,9 @@ def build_listings(db, users):
         "other": [users["sellersam@example.com"], users["phonefan@example.com"]],
     }
 
-    created = []
-    for category, count in category_plan:
-        category_builders = builders[category]
+    for category, subcategory, count in CATEGORY_SUBCATEGORY_PLAN:
         for _ in range(count):
-            builder = weighted_choice(RNG, category_builders)
-            listing_data = builder(RNG)
+            listing_data = build_catalog_listing(RNG, category, subcategory)
             listing_data["author_id"] = RNG.choice(author_pools[category]).id
             listing = models.Listing(**listing_data)
             listing.created_at = datetime.now() - random_age(RNG, listing.status)
@@ -580,11 +865,16 @@ def build_listings(db, users):
 
 
 def seed_messages(db, users, listings):
-    by_title = {listing.title: listing for listing in listings}
+    def first_listing(category, subcategory):
+        for listing in listings:
+            if listing.category == category and listing.subcategory == subcategory:
+                return listing
+        return listings[0]
+
     sample_listings = [
-        by_title.get("Apple iPhone 15 256GB"),
-        by_title.get("IKEA MALM bed frame"),
-        by_title.get("Nike Tech Fleece hoodie"),
+        first_listing("electronics", "phones"),
+        first_listing("furniture", "beds"),
+        first_listing("clothing", "shirts"),
     ]
     messages = [
         {"sender_id": users["phonefan@example.com"].id, "receiver_id": sample_listings[0].author_id if sample_listings[0] else users["sellersam@example.com"].id, "listing_id": sample_listings[0].id if sample_listings[0] else listings[0].id, "content": "Hi, is this iPhone still available?"},
