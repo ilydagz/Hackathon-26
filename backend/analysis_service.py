@@ -206,6 +206,9 @@ def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], pr
                 ],
             }
         ],
+        "tools": [
+            {"google_search": {}}
+        ],
         "generationConfig": {
             "response_mime_type": "application/json",
             "temperature": 0.2,
@@ -236,14 +239,19 @@ def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], pr
     raise RuntimeError("Gemini request failed")
 
 
-def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: str) -> ListingAnalysis:
+def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: str, local_listings_context: Optional[str] = None) -> ListingAnalysis:
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
         raise RuntimeError("Gemini API key is not configured")
 
+    context_str = ""
+    if local_listings_context:
+        context_str = f"\nLOCAL MARKETPLACE CONTEXT:\n{local_listings_context}\nUse the above currency and listing prices as references for local market dynamics.\n"
+
     prompt = (
         "You are a second-hand marketplace listing assistant.\n"
         "Analyze photo truthfully. Use only visible evidence.\n"
+        f"{context_str}"
         "Return concise JSON for a draft listing with:\n"
         "- title\n"
         "- description\n"
@@ -267,8 +275,17 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "If evidence is weak, set needs_more_photos true and retake_recommended true.\n"
         "Keep copy short, practical, and editable.\n"
         "Use sell_fast, balanced, or maximize for price_strategy.\n"
-        "Set price_floor below lowest recommended price and price_ceiling above highest recommended price.\n"
-        "Price should be conservative when confidence is low."
+        "GROUNDED REAL-WORLD PRICING WORKFLOW:\n"
+        "1. Identify the brand, model, and generation of the item accurately.\n"
+        "2. Execute a Google Search query for current second-hand or new market prices of this exact item in Turkey (in Turkish Lira ₺).\n"
+        "3. Calculate realistic and grounded prices in Turkish Lira (TRY / ₺):\n"
+        "   - quick_price: realistic price to sell the item within 2-3 days.\n"
+        "   - market_price: average second-hand market price in Turkey.\n"
+        "   - price_ceiling: top end of the second-hand market price in Turkey.\n"
+        "   For example, a used modern iPhone (e.g. iPhone 11-15) must be priced in the thousands of Turkish Lira (₺10,000 - ₺45,000) based on actual market search results, not ₺300.\n"
+        "4. Set price_floor below quick_price and price_ceiling above market_price.\n"
+        "5. In your price_rationale and rationale fields, explicitly explain what specific web prices or second-hand listings you found during your Google Search (e.g., 'Google Search shows second-hand iPhone 13 128GB sells between ₺16,000 and ₺20,000 on local Turkish marketplaces. Balanced price is set to ₺18,000.').\n"
+        "Price should be conservative when confidence is low, but must still be grounded in real-world currency value."
     )
 
     try:

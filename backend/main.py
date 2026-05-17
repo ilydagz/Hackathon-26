@@ -213,7 +213,21 @@ def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], fi
         job.status = "processing"
         db.commit()
 
-        analysis = analyze_listing_image(file_path, mime_type, filename)
+        # Fetch active listings to provide a currency and pricing anchor
+        local_listings_context = ""
+        try:
+            recent_listings = db.query(models.Listing).filter(models.Listing.status == "active").order_by(models.Listing.created_at.desc()).limit(10).all()
+            if recent_listings:
+                context_parts = ["Active listings in our marketplace for currency and price references:"]
+                for lst in recent_listings:
+                    context_parts.append(
+                        f"- Title: {lst.title}, Category: {lst.category}, Price: ₺{lst.selected_price}, Condition: {lst.condition}"
+                    )
+                local_listings_context = "\n".join(context_parts)
+        except Exception as db_exc:
+            print(f"Failed to fetch grounding context: {db_exc}")
+
+        analysis = analyze_listing_image(file_path, mime_type, filename, local_listings_context=local_listings_context)
         job.status = "completed"
         job.result_json = {
             **analysis.model_dump(),
