@@ -32,3 +32,14 @@ Set the backend env vars before starting the API:
 - optional `GEMINI_MODEL=gemini-2.5-flash-lite`
 
 If no key is present, the app falls back to mock analysis.
+
+## Test Data
+
+Populate the database with realistic marketplace inventory:
+
+```bash
+cd backend
+python seed.py
+```
+
+This seeds about 1000 listings across electronics, furniture, clothing, decor, and other categories, plus feed events that bias one demo user toward phones.

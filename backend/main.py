@@ -170,13 +170,40 @@ def normalize_tokens(text: Optional[str]) -> List[str]:
     return [token for token in cleaned.split() if len(token) > 2]
 
 def listing_text_tokens(listing: models.Listing) -> List[str]:
+    attribute_text = ""
+    if isinstance(listing.attributes, dict):
+        attribute_text = " ".join(
+            str(value) for value in listing.attributes.values() if value is not None and str(value).strip()
+        )
     return normalize_tokens(" ".join([
         listing.title or "",
         listing.description or "",
         listing.category or "",
         listing.subcategory or "",
-        " ".join((listing.attributes or {}).values()) if isinstance(listing.attributes, dict) else "",
+        attribute_text,
     ]))
+
+TOKEN_SYNONYMS = {
+    "phone": {"phone", "phones", "iphone", "iphones", "smartphone", "smartphones", "mobile", "cell", "galaxy", "pixel"},
+    "iphone": {"iphone", "iphones", "phone", "phones", "smartphone", "mobile"},
+    "smartphone": {"smartphone", "smartphones", "phone", "phones", "mobile", "cell"},
+    "laptop": {"laptop", "laptops", "notebook", "macbook", "thinkpad", "xps", "zenbook", "spectre"},
+    "tablet": {"tablet", "tablets", "ipad", "galaxy", "tab"},
+    "audio": {"audio", "headphones", "headphone", "earbuds", "speaker", "speakers"},
+    "chair": {"chair", "chairs", "seat", "stool", "office"},
+    "sofa": {"sofa", "couch", "loveseat", "sectional"},
+    "shirt": {"shirt", "shirts", "top", "tops", "tee", "tshirt", "t-shirt"},
+    "dress": {"dress", "dresses", "gown"},
+    "decor": {"decor", "home", "vase", "lamp", "mirror", "rug", "art"},
+    "bike": {"bike", "bikes", "bicycle", "bicycles", "mountain", "road"},
+}
+
+
+def expand_tokens(tokens: List[str]) -> List[str]:
+    expanded = set(tokens)
+    for token in tokens:
+        expanded.update(TOKEN_SYNONYMS.get(token, set()))
+    return list(expanded)
 
 def event_weight(event_type: str) -> float:
     weights = {
@@ -265,13 +292,18 @@ def score_listing(listing: models.Listing, profile: dict, search: Optional[str],
         score += profile["author_scores"][listing.author_id] * 1.1
         signals.append("seller you engaged with")
 
-    search_terms = normalize_tokens(search)
-    listing_tokens = listing_text_tokens(listing)
+    search_terms = expand_tokens(normalize_tokens(search))
+    listing_tokens = expand_tokens(listing_text_tokens(listing))
     if search_terms:
       overlap = sum(1 for token in search_terms if token in listing_tokens)
       if overlap:
           score += overlap * 1.6
           signals.append("matches search")
+
+    history_overlap = sum(profile["query_tokens"].get(token, 0.0) for token in listing_tokens)
+    if history_overlap:
+        score += history_overlap * 0.35
+        signals.append("matches your search history")
 
     if category and category != "all":
       if cat == category.lower() or (listing.subcategory or "").lower() == category.lower():
