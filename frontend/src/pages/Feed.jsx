@@ -154,6 +154,11 @@ const Feed = () => {
   const rankedListings = remainingListings.length > 0 ? remainingListings : listings.slice(5);
   const topCategory = feedInsights?.top_categories?.[0];
   const priceRange = feedInsights?.preferred_price_range;
+  const feedErrorTitle = /429|rate limit/i.test(error)
+    ? 'FeedScout is rate-limited'
+    : /500|internal error/i.test(error)
+      ? 'FeedScout hit internal error'
+      : 'FeedScout unavailable right now';
 
   const renderFeedCard = (listing, index, compact = false) => (
     <motion.div
@@ -332,7 +337,7 @@ const Feed = () => {
 
       {error && !loading && (
         <div className="mb-xl rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-amber-900">
-          <p className="font-title-card text-title-card">FeedScout is rate-limited</p>
+          <p className="font-title-card text-title-card">{feedErrorTitle}</p>
           <p className="mt-1 text-sm">{error}</p>
           <button
             type="button"
