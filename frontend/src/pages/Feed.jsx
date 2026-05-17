@@ -332,7 +332,7 @@ const Feed = () => {
 
       {error && !loading && (
         <div className="mb-xl rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-amber-900">
-          <p className="font-title-card text-title-card">FeedScout needs AI access</p>
+          <p className="font-title-card text-title-card">FeedScout is rate-limited</p>
           <p className="mt-1 text-sm">{error}</p>
           <button
             type="button"

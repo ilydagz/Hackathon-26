@@ -77,6 +77,27 @@ def _extract_json_payload(text: str) -> dict:
         raise
 
 
+def _format_gemini_error(exc: Exception) -> str:
+    if isinstance(exc, urllib.error.HTTPError):
+        detail = ""
+        try:
+            body = exc.read().decode("utf-8")
+            payload = json.loads(body)
+            detail = payload.get("error", {}).get("message") or body.strip()
+        except Exception:
+            detail = getattr(exc, "reason", "") or ""
+        if detail:
+            return f"Gemini HTTP {exc.code}: {detail}"
+        return f"Gemini HTTP {exc.code}"
+    if isinstance(exc, urllib.error.URLError):
+        return f"Gemini network error: {exc.reason}"
+    if isinstance(exc, json.JSONDecodeError):
+        return f"Gemini response parse failed: {exc.msg}"
+    if isinstance(exc, ValueError):
+        return f"Gemini response invalid: {exc}"
+    return f"Gemini request failed: {exc}"
+
+
 def _normalize_category(value: object) -> str:
     text = str(value or "").strip().lower()
     if any(token in text for token in ["chair", "table", "desk", "sofa", "furniture"]):
@@ -261,6 +282,6 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         payload["confidence"] = min(1.0, max(0.0, payload["confidence"]))
         return ListingAnalysis.model_validate(payload)
     except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError("Gemini analysis failed") from exc
+        raise RuntimeError(_format_gemini_error(exc)) from exc
     except Exception as exc:
-        raise RuntimeError("Gemini analysis failed") from exc
+        raise RuntimeError(_format_gemini_error(exc)) from exc

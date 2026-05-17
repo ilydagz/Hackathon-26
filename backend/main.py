@@ -109,6 +109,27 @@ def extract_gemini_text(response: dict) -> str:
         raise RuntimeError("Gemini response missing text")
     return text
 
+
+def format_gemini_error(exc: Exception) -> str:
+    if isinstance(exc, urllib.error.HTTPError):
+        detail = ""
+        try:
+            body = exc.read().decode("utf-8")
+            payload = json.loads(body)
+            detail = payload.get("error", {}).get("message") or body.strip()
+        except Exception:
+            detail = getattr(exc, "reason", "") or ""
+        if detail:
+            return f"Gemini HTTP {exc.code}: {detail}"
+        return f"Gemini HTTP {exc.code}"
+    if isinstance(exc, urllib.error.URLError):
+        return f"Gemini network error: {exc.reason}"
+    if isinstance(exc, json.JSONDecodeError):
+        return f"Gemini response parse failed: {exc.msg}"
+    if isinstance(exc, ValueError):
+        return f"Gemini response invalid: {exc}"
+    return f"Gemini request failed: {exc}"
+
 def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> dict:
     api_key = get_gemini_api_key()
     request_payload = {
@@ -144,7 +165,7 @@ def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> di
             text = re.sub(r"^```(?:json)?\s*|\s*```$", "", text, flags=re.IGNORECASE | re.DOTALL).strip()
         return json.loads(text)
     except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError("Gemini request failed") from exc
+        raise RuntimeError(format_gemini_error(exc)) from exc
 
 
 def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], filename: str):
