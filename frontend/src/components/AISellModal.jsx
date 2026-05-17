@@ -60,6 +60,17 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const galleryInputRef = useRef(null);
   const cameraInputRef = useRef(null);
 
+  const resetDraftState = () => {
+    setAiData(null);
+    setDraftTitle('');
+    setDraftDescription('');
+    setDraftCategory('furniture');
+    setDraftCondition('good');
+    setAttributes({});
+    setSelectedPrice('balanced');
+    setCustomPrice('');
+  };
+
   async function fetchDrafts() {
     try {
       const data = await api.getDrafts();
@@ -91,7 +102,10 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
       pollAnalysisJob(jobId);
     } catch (err) {
       console.error(err);
-      setAnalysisError('Analysis failed. Try another photo or retry upload.');
+      resetDraftState();
+      setImage(null);
+      setPreview(null);
+      setAnalysisError('AI was unable to analyze this photo. Try a clearer image or another item.');
       setStep(1);
     } finally {
       setAnalyzing(false);
@@ -150,7 +164,10 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         }
 
         if (job.status === 'failed') {
-          setAnalysisError(job.error_message || 'Analysis failed. Try another photo or retry upload.');
+          resetDraftState();
+          setImage(null);
+          setPreview(null);
+          setAnalysisError(job.error_message || 'AI was unable to analyze this photo. Try a clearer image or another item.');
           setStep(1);
           return;
         }
@@ -164,7 +181,10 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         setTimeout(tick, 1000);
       } catch (err) {
         console.error(err);
-        setAnalysisError('Analysis failed. Try another photo or retry upload.');
+        resetDraftState();
+        setImage(null);
+        setPreview(null);
+        setAnalysisError('AI was unable to analyze this photo. Try a clearer image or another item.');
         setStep(1);
       }
     };
@@ -373,19 +393,14 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                 </button>
                 <input type="file" ref={galleryInputRef} className="hidden" accept="image/*" onChange={handleImageChange} />
                 <input type="file" ref={cameraInputRef} className="hidden" accept="image/*" capture="environment" onChange={handleImageChange} />
+                {analysisError && (
+                  <div className="mt-md rounded-xl border border-status-danger/30 bg-status-danger/10 p-md text-status-danger">
+                    <p className="font-body-sm text-body-sm">{analysisError}</p>
+                  </div>
+                )}
                 {preview && (
                   <div className="mt-lg rounded-2xl overflow-hidden border border-border-subtle bg-surface-card">
                     <img src={preview} alt="Selected preview" className="w-full aspect-square object-cover" />
-                  </div>
-                )}
-                {analysisError && (
-                  <div className="mt-md rounded-xl border border-status-danger/30 bg-status-danger/10 p-md text-status-danger flex items-start justify-between gap-md">
-                    <p className="font-body-sm text-body-sm">{analysisError}</p>
-                    {image && (
-                      <button onClick={() => startAnalysis(image)} className="font-title-card text-title-card underline shrink-0">
-                        Retry
-                      </button>
-                    )}
                   </div>
                 )}
               </main>

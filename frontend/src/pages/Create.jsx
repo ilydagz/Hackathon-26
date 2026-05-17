@@ -56,6 +56,12 @@ const Create = () => {
     "Optimizing listing...",
   ];
 
+  const resetDraftState = () => {
+    setAiData(null);
+    setSelectedStrategy('balanced');
+    setCustomPriceInput('');
+  };
+
   const handleTriggerCamera = () => {
     fileInputRef.current?.click();
   };
@@ -85,7 +91,10 @@ const Create = () => {
       pollAnalysisJob(jobId);
     } catch (error) {
       console.error('Analysis failed:', error);
-      setAnalysisError('Analysis failed. Try another photo or retry upload.');
+      resetDraftState();
+      setImage(null);
+      setPreview(null);
+      setAnalysisError('AI was unable to analyze this photo. Try a clearer image or another item.');
       setStatus('idle');
     } finally {
       clearInterval(interval);
@@ -136,7 +145,10 @@ const Create = () => {
         }
 
         if (job.status === 'failed') {
-          setAnalysisError(job.error_message || 'Analysis failed. Try another photo or retry upload.');
+          resetDraftState();
+          setImage(null);
+          setPreview(null);
+          setAnalysisError(job.error_message || 'AI was unable to analyze this photo. Try a clearer image or another item.');
           setStatus('idle');
           return;
         }
@@ -150,7 +162,10 @@ const Create = () => {
         setTimeout(tick, 1000);
       } catch (err) {
         console.error(err);
-        setAnalysisError('Analysis failed. Try another photo or retry upload.');
+        resetDraftState();
+        setImage(null);
+        setPreview(null);
+        setAnalysisError('AI was unable to analyze this photo. Try a clearer image or another item.');
         setStatus('idle');
       }
     };
@@ -282,6 +297,9 @@ const Create = () => {
               <span className="text-2xl font-black tracking-tighter">Snap Item Photo</span>
               <span className="text-muted-foreground font-bold uppercase tracking-widest text-[9px] mt-2">Environment Camera</span>
             </button>
+            {analysisError && (
+              <p className="mt-6 text-sm text-red-600 font-semibold">{analysisError}</p>
+            )}
             <input 
               type="file" 
               ref={fileInputRef}

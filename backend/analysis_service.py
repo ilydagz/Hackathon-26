@@ -62,63 +62,6 @@ def _pricing_profile(quick_price: int, market_price: int, confidence: float) -> 
     }
 
 
-def _mock_analysis(filename: str) -> ListingAnalysis:
-    name = (filename or "").lower()
-    if any(token in name for token in ["chair", "table", "desk", "sofa"]):
-        pricing = _pricing_profile(850, 1100, 0.72)
-        return ListingAnalysis(
-            title="Wooden Desk Chair",
-            description="Sturdy second-hand desk chair with clean lines and practical everyday use.",
-            quick_price=850,
-            market_price=1100,
-            **pricing,
-            category="furniture",
-            condition="good",
-            confidence=0.72,
-            retake_recommended=False,
-            image_quality="good",
-            quality_note="Shape and material are readable from filename cues, but seller should still confirm condition.",
-            rationale="Chair shape and furniture cues are visible, but condition still needs a closer look.",
-            suggested_attributes=SuggestedAttributes(material="Wood", color="Brown"),
-        )
-
-    if any(token in name for token in ["phone", "watch", "headphone", "laptop", "camera", "mouse"]):
-        pricing = _pricing_profile(1500, 1900, 0.68)
-        return ListingAnalysis(
-            title="Used Electronics Item",
-            description="Clean used electronics item with visible signs of normal wear and ready for a new owner.",
-            quick_price=1500,
-            market_price=1900,
-            **pricing,
-            category="electronics",
-            condition="good",
-            confidence=0.68,
-            retake_recommended=False,
-            image_quality="good",
-            quality_note="Filename points to electronics, but model and wear level remain unverified.",
-            rationale="Filename suggests electronics, but exact model and condition need seller confirmation.",
-            suggested_attributes=SuggestedAttributes(brand="Unknown", warranty="Unknown"),
-        )
-
-    pricing = _pricing_profile(500, 650, 0.55)
-    return ListingAnalysis(
-        title="Second-Hand Item",
-        description="Practical second-hand item with straightforward listing copy and room for seller edits.",
-        quick_price=500,
-        market_price=650,
-        **pricing,
-        category="other",
-        condition="good",
-        confidence=0.55,
-        needs_more_photos=True,
-        retake_recommended=True,
-        image_quality="poor",
-        quality_note="Image evidence is limited, so a clearer, brighter, closer photo would help.",
-        rationale="Image evidence is limited, so analysis stays conservative and asks for a clearer photo.",
-        suggested_attributes=SuggestedAttributes(notes="Add more photos for better draft quality."),
-    )
-
-
 def _extract_json_payload(text: str) -> dict:
     raw = (text or "").strip()
     if not raw:
@@ -243,7 +186,7 @@ def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], pr
 def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: str) -> ListingAnalysis:
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return _mock_analysis(filename)
+        raise RuntimeError("Gemini API key is not configured")
 
     prompt = (
         "You are a second-hand marketplace listing assistant.\n"
@@ -318,8 +261,6 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         payload["confidence"] = min(1.0, max(0.0, payload["confidence"]))
         return ListingAnalysis.model_validate(payload)
     except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
-        print(f"Gemini analysis failed, using mock fallback: {exc}")
-        return _mock_analysis(filename)
+        raise RuntimeError("Gemini analysis failed") from exc
     except Exception as exc:
-        print(f"Gemini analysis failed, using mock fallback: {exc}")
-        return _mock_analysis(filename)
+        raise RuntimeError("Gemini analysis failed") from exc
