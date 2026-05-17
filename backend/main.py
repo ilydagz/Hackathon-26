@@ -183,7 +183,7 @@ def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> di
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=15) as response:
+            with urllib.request.urlopen(request, timeout=90) as response:
                 body = response.read().decode("utf-8")
             response_json = json.loads(body)
             text = extract_gemini_text(response_json).strip()
@@ -542,51 +542,23 @@ def build_feed_response(db: Session, current_user: Optional[models.User], catego
         ],
     }
 
-    prompt = (
-        "You are FeedScout, an AI marketplace ranking agent. "
-        "Rank the provided listings for the current user so the most relevant item appears first. "
-        "Use the user's recent events, current search, category, freshness, price fit, seller affinity, and general marketplace relevance. "
-        "Return valid JSON with this exact shape: "
-        "{"
-        '"items":[{"id":1,"feed_score":9.8,"feed_reason":"short reason","feed_badge":"optional badge","feed_signals":["signal 1","signal 2"]}],'
-        '"insights":{"top_categories":[{"name":"electronics","score":9.2}],"preferred_price_range":{"min":100,"max":150},"summary":"short summary"}'
-        "}."
-        " Include every listing exactly once, in the final ranking order, and do not add any extra keys."
-    )
-    response = call_gemini_json(prompt, payload, temperature=0.15)
-
-    ranked_items = response.get("items")
-    insights = response.get("insights") or {}
-    if not isinstance(ranked_items, list):
-        raise RuntimeError("FeedScout response missing ranked items")
-
-    listing_by_id = {listing.id: listing for listing in listings}
-    seen_ids = set()
     items = []
-    for item in ranked_items:
-        listing_id = item.get("id")
-        if listing_id not in listing_by_id or listing_id in seen_ids:
-            continue
-        seen_ids.add(listing_id)
-        listing = listing_by_id[listing_id]
+    for idx, listing in enumerate(listings):
         listing_payload = schemas.ListingResponse.model_validate(listing).model_dump()
         items.append({
             **listing_payload,
-            "feed_score": float(item.get("feed_score", 0)),
-            "feed_reason": str(item.get("feed_reason") or "AI ranked this item for you."),
-            "feed_badge": item.get("feed_badge"),
-            "feed_signals": item.get("feed_signals") if isinstance(item.get("feed_signals"), list) else [],
+            "feed_score": float(10.0 - (idx * 0.1)),
+            "feed_reason": "Fresh from marketplace",
+            "feed_badge": None,
+            "feed_signals": [],
         })
-
-    if len(items) != len(listings):
-        raise RuntimeError("FeedScout did not rank every listing")
 
     return {
         "items": items,
         "insights": {
-            "top_categories": insights.get("top_categories") if isinstance(insights.get("top_categories"), list) else [],
-            "preferred_price_range": insights.get("preferred_price_range"),
-            "summary": str(insights.get("summary") or "Ranked by live user intent and marketplace relevance."),
+            "top_categories": [],
+            "preferred_price_range": None,
+            "summary": "Showing latest items from the marketplace.",
         },
     }
 

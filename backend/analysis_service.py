@@ -222,7 +222,7 @@ def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], pr
         )
 
         try:
-            with urllib.request.urlopen(request, timeout=15) as response:
+            with urllib.request.urlopen(request, timeout=90) as response:
                 body = response.read().decode("utf-8")
             return json.loads(body)
         except Exception as exc:
