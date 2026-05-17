@@ -95,3 +95,18 @@ class FeedEvent(Base):
     query = Column(String, nullable=True)
     event_metadata = Column("metadata", JSON, nullable=True)
     timestamp = Column(DateTime, default=datetime.utcnow, index=True)
+
+class Offer(Base):
+    __tablename__ = "offers"
+
+    id = Column(Integer, primary_key=True, index=True)
+    listing_id = Column(Integer, ForeignKey("listings.id"), index=True)
+    buyer_id = Column(Integer, ForeignKey("users.id"))
+    seller_id = Column(Integer, ForeignKey("users.id"))
+    amount = Column(Float)
+    status = Column(String, default="pending") # pending, accepted, declined, countered
+    created_at = Column(DateTime, default=datetime.utcnow)
+
+    listing = relationship("Listing")
+    buyer = relationship("User", foreign_keys=[buyer_id])
+    seller = relationship("User", foreign_keys=[seller_id])

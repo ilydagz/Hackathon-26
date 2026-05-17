@@ -556,6 +556,66 @@ def build_feed_response(db: Session, current_user: Optional[models.User], catego
         ],
     }
 
+    # Only call AI for relevance if we actually have enough user events to personalize against.
+    # Otherwise, skip to save Gemini API quotas and speed up feed load!
+    if recent_events and len(recent_events) > 0:
+        try:
+            api_key = get_gemini_api_key()
+            prompt = (
+                "You are a marketplace personalization agent.\n"
+                "Analyze the 'context' containing the user's recent clicks, searches, and favorite categories.\n"
+                "Then, evaluate each listing in 'listings'. Return a JSON object with 'scored_items' array (each object having 'id' (int), 'feed_score' (float 0-10), 'feed_reason' (string), 'feed_badge' (optional string)) and an 'insights' object (with 'summary' and 'top_categories').\n"
+                "Rank items that match the user's recent events or location higher. Unrelated items get a score < 5.\n"
+                "Return JSON matching exactly this payload structure."
+            )
+            
+            req_payload = {
+                "contents": [
+                    {"role": "user", "parts": [{"text": prompt + "\n\nPayload:\n" + json.dumps(payload)}]}
+                ],
+                "generationConfig": {"response_mime_type": "application/json", "temperature": 0.2}
+            }
+            
+            req = urllib.request.Request(
+                f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}",
+                data=json.dumps(req_payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=8) as response:
+                body = response.read().decode("utf-8")
+                data = json.loads(body)
+                ai_text = extract_gemini_text(data)
+                ai_data = json.loads(ai_text)
+                
+                scores_map = {item["id"]: item for item in ai_data.get("scored_items", [])}
+                items = []
+                for listing in listings:
+                    listing_payload = schemas.ListingResponse.model_validate(listing).model_dump()
+                    score_info = scores_map.get(listing.id, {})
+                    items.append({
+                        **listing_payload,
+                        "feed_score": float(score_info.get("feed_score", 5.0)),
+                        "feed_reason": score_info.get("feed_reason", "Fresh from marketplace"),
+                        "feed_badge": score_info.get("feed_badge", None),
+                        "feed_signals": [],
+                    })
+                    
+                # We purposefully DO NOT sort by feed_score here to keep the feed "normally displayed" 
+                # (chronological) while allowing the UI to use the AI badges for highlighting relevance.
+                return {
+                    "items": items,
+                    "insights": ai_data.get("insights", {
+                        "top_categories": [],
+                        "preferred_price_range": None,
+                        "summary": "Showing personalized items.",
+                    })
+                }
+        except Exception as e:
+            print(f"Personalization error: {e}")
+            pass # Fallthrough to standard chronological feed
+
+    # Fallback / Default: Standard chronological feed
     items = []
     for idx, listing in enumerate(listings):
         listing_payload = schemas.ListingResponse.model_validate(listing).model_dump()
@@ -614,8 +674,10 @@ def build_chat_assist(listing: models.Listing, messages: List[models.Message], c
     }
 
     prompt = (
-        "You are Chat Copilot for a marketplace conversation. "
-        "Read the listing and the conversation history, then write the next best reply guidance for the current user. "
+        f"You are Chat Copilot for a marketplace conversation. "
+        f"You are generating replies specifically for the current user, {current_user.name} (user ID: {current_user.id}). "
+        f"The other person in the chat is {other_user.name} (user ID: {other_user.id}). "
+        f"Read the listing and the conversation history, then write the next best replies that {current_user.name} should send to {other_user.name}. "
         "Return valid JSON with this exact shape: "
         "{"
         '"tone_label":"short tone label",'
@@ -875,7 +937,12 @@ def get_admin_listings(admin: models.User = Depends(get_admin_user), db: Session
 
 @app.post("/api/listings", response_model=schemas.ListingResponse)
 def create_listing(listing: schemas.ListingCreate, request: Request, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
-    db_listing = models.Listing(**listing.dict(), author_id=current_user.id)
+    listing_data = listing.dict(exclude={"is_safe", "moderation_reason"})
+    if getattr(listing, "is_safe", True) is False:
+        listing_data["status"] = "flagged"
+        listing_data["flags"] = 1
+        
+    db_listing = models.Listing(**listing_data, author_id=current_user.id)
     db.add(db_listing)
     db.commit()
     db.refresh(db_listing)
@@ -911,6 +978,85 @@ def mark_as_sold(listing_id: int, current_user: models.User = Depends(get_curren
     db.commit()
     db.refresh(db_listing)
     return db_listing
+
+@app.post("/api/listings/{listing_id}/offers", response_model=schemas.OfferResponse)
+def create_offer(listing_id: int, offer: schemas.OfferCreate, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if listing.author_id == current_user.id:
+        raise HTTPException(status_code=400, detail="Cannot offer on your own listing")
+        
+    db_offer = models.Offer(
+        listing_id=listing_id,
+        buyer_id=current_user.id,
+        seller_id=listing.author_id,
+        amount=offer.amount
+    )
+    db.add(db_offer)
+    db.commit()
+    db.refresh(db_offer)
+    return db_offer
+
+@app.get("/api/listings/{listing_id}/offers", response_model=List[schemas.OfferResponse])
+def get_listing_offers(listing_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    listing = db.query(models.Listing).filter(models.Listing.id == listing_id).first()
+    if not listing:
+        raise HTTPException(status_code=404, detail="Listing not found")
+    if listing.author_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    return db.query(models.Offer).filter(models.Offer.listing_id == listing_id).order_by(desc(models.Offer.created_at)).all()
+
+@app.put("/api/offers/{offer_id}", response_model=schemas.OfferResponse)
+def decide_offer(offer_id: int, decision: schemas.OfferDecisionRequest, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    offer = db.query(models.Offer).filter(models.Offer.id == offer_id).first()
+    if not offer:
+        raise HTTPException(status_code=404, detail="Offer not found")
+    
+    if offer.seller_id != current_user.id and offer.buyer_id != current_user.id:
+        raise HTTPException(status_code=403, detail="Not authorized")
+        
+    offer.status = decision.status
+    db.commit()
+    db.refresh(offer)
+    return offer
+
+@app.get("/api/offers/{offer_id}/guidance")
+def get_offer_guidance(offer_id: int, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    offer = db.query(models.Offer).filter(models.Offer.id == offer_id).first()
+    if not offer or offer.seller_id != current_user.id:
+        raise HTTPException(status_code=404, detail="Offer not found or not authorized")
+        
+    listing = offer.listing
+    prompt = (
+        f"You are a negotiation assistant. The seller has listed '{listing.title}' for ₺{listing.selected_price}.\n"
+        f"The AI market price is ₺{listing.price_ceiling or listing.selected_price} and floor is ₺{listing.price_floor or listing.selected_price}.\n"
+        f"A buyer has made an offer of ₺{offer.amount}.\n"
+        f"Recommend whether the seller should ACCEPT, DECLINE, or COUNTER. Provide a 2-sentence rationale and a suggested counter amount if applicable.\n"
+        "Return JSON with format: {\"recommendation\": \"ACCEPT\"|\"DECLINE\"|\"COUNTER\", \"rationale\": \"...\", \"suggested_counter\": 1234}"
+    )
+    
+    api_key = get_gemini_api_key()
+    payload = {
+        "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+        "generationConfig": {"response_mime_type": "application/json", "temperature": 0.2}
+    }
+    
+    try:
+        req = urllib.request.Request(
+            f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}",
+            data=json.dumps(payload).encode("utf-8"),
+            headers={"Content-Type": "application/json"},
+            method="POST"
+        )
+        with urllib.request.urlopen(req, timeout=10) as response:
+            body = response.read().decode("utf-8")
+            data = json.loads(body)
+            text_val = extract_gemini_text(data)
+            return json.loads(text_val)
+    except Exception as e:
+        return {"recommendation": "UNKNOWN", "rationale": f"Could not get AI guidance.", "suggested_counter": None}
 
 @app.delete("/api/listings/{listing_id}")
 def delete_listing(listing_id: int, request: Request, current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
@@ -1047,3 +1193,54 @@ def get_analysis_job(job_id: int, db: Session = Depends(get_db)):
     if not job:
         raise HTTPException(status_code=404, detail="Analysis job not found")
     return job
+
+@app.get("/api/users/me/nudges")
+def get_user_nudges(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
+    from datetime import timedelta
+    slow_listings = db.query(models.Listing).filter(
+        models.Listing.author_id == current_user.id,
+        models.Listing.status == "active",
+        models.Listing.created_at < datetime.utcnow() - timedelta(days=7)
+    ).all()
+    
+    nudges = []
+    api_key = get_gemini_api_key()
+    
+    for listing in slow_listings:
+        views = db.query(models.FeedEvent).filter(
+            models.FeedEvent.listing_id == listing.id,
+            models.FeedEvent.event_type == "impression"
+        ).count()
+        
+        prompt = (
+            f"You are a sales assistant. The seller's item '{listing.title}' was listed 7+ days ago at ₺{listing.selected_price}.\n"
+            f"It has {views} views but no sale yet.\n"
+            f"Suggest a single sentence nudge to the seller to lower the price to ₺{listing.price_floor or max(1, round(listing.selected_price*0.9))} to get it sold this weekend."
+        )
+        
+        req_payload = {
+            "contents": [{"role": "user", "parts": [{"text": prompt}]}],
+            "generationConfig": {"response_mime_type": "text/plain", "temperature": 0.2}
+        }
+        
+        try:
+            req = urllib.request.Request(
+                f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}",
+                data=json.dumps(req_payload).encode("utf-8"),
+                headers={"Content-Type": "application/json"},
+                method="POST"
+            )
+            with urllib.request.urlopen(req, timeout=5) as response:
+                body = response.read().decode("utf-8")
+                data = json.loads(body)
+                nudge_text = extract_gemini_text(data)
+                nudges.append({
+                    "listing_id": listing.id,
+                    "title": listing.title,
+                    "message": nudge_text
+                })
+        except Exception as e:
+            print(f"Failed to get nudge for listing {listing.id}: {e}")
+            continue
+            
+    return {"nudges": nudges}

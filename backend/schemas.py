@@ -55,6 +55,8 @@ class ListingBase(BaseModel):
 
 class ListingCreate(ListingBase):
     status: Optional[str] = "active"
+    is_safe: Optional[bool] = True
+    moderation_reason: Optional[str] = None
 
 class ListingUpdate(BaseModel):
     title: Optional[str] = None
@@ -193,3 +195,27 @@ class AnalysisJobResponse(BaseModel):
 
     class Config:
         from_attributes = True
+
+# --- Offer Schemas ---
+class OfferBase(BaseModel):
+    amount: float
+
+class OfferCreate(OfferBase):
+    pass
+
+class OfferResponse(OfferBase):
+    id: int
+    listing_id: int
+    buyer_id: int
+    seller_id: int
+    status: str
+    created_at: datetime
+    buyer: Optional[UserResponse] = None
+    seller: Optional[UserResponse] = None
+    
+    class Config:
+        from_attributes = True
+
+class OfferDecisionRequest(BaseModel):
+    status: str
+    counter_amount: Optional[float] = None

@@ -208,6 +208,8 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         price_floor: aiData?.price_floor,
         price_ceiling: aiData?.price_ceiling,
         price_rationale: aiData?.price_rationale,
+        is_safe: aiData?.is_safe ?? true,
+        moderation_reason: aiData?.moderation_reason ?? null,
       };
 
       if (selectedDraftId) {
@@ -243,6 +245,8 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
         price_floor: aiData?.price_floor,
         price_ceiling: aiData?.price_ceiling,
         price_rationale: aiData?.price_rationale,
+        is_safe: aiData?.is_safe ?? true,
+        moderation_reason: aiData?.moderation_reason ?? null,
       };
 
       if (selectedDraftId) {

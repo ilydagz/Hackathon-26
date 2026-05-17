@@ -40,6 +40,8 @@ class ListingAnalysis(BaseModel):
     quality_note: str = Field(min_length=10)
     rationale: str = Field(min_length=10)
     suggested_attributes: SuggestedAttributes = Field(default_factory=SuggestedAttributes)
+    is_safe: bool = True
+    moderation_reason: Optional[str] = None
 
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-3.1-flash-lite")
@@ -270,6 +272,8 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "- quality_note\n"
         "- rationale\n"
         "- suggested_attributes (JSON object with optional keys: brand, model, size, material, color, warranty, dimensions, notes)\n"
+        "- is_safe (boolean, false if the item is a weapon, illegal, explicit, toxic, or policy breaching)\n"
+        "- moderation_reason (string, if is_safe is false, explain why)\n"
         "Never invent brand/model/condition.\n"
         "If image is blurry, dark, cropped, or partial, set image_quality to poor or unclear, lower confidence, and recommend retake.\n"
         "If evidence is weak, set needs_more_photos true and retake_recommended true.\n"
