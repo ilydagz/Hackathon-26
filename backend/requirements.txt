@@ -3,5 +3,3 @@ uvicorn
 sqlalchemy
 python-multipart
 pydantic
-google-genai
-python-dotenv

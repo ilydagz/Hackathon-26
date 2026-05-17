@@ -1,9 +1,14 @@
+import base64
+import json
 import os
+import urllib.error
+import urllib.request
 from typing import Optional, Literal
 from pydantic import BaseModel, Field
-from dotenv import load_dotenv
 
-load_dotenv()
+from env_loader import load_local_env
+
+load_local_env()
 
 
 class SuggestedAttributes(BaseModel):
@@ -38,6 +43,7 @@ class ListingAnalysis(BaseModel):
 
 
 DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
+GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 
 
 def _pricing_profile(quick_price: int, market_price: int, confidence: float) -> dict:
@@ -113,14 +119,99 @@ def _mock_analysis(filename: str) -> ListingAnalysis:
     )
 
 
+def _extract_json_payload(text: str) -> dict:
+    raw = (text or "").strip()
+    if not raw:
+        raise ValueError("Empty Gemini response")
+
+    try:
+        return json.loads(raw)
+    except json.JSONDecodeError:
+        start = raw.find("{")
+        end = raw.rfind("}")
+        if start >= 0 and end > start:
+            return json.loads(raw[start : end + 1])
+        raise
+
+
+def _normalize_category(value: object) -> str:
+    text = str(value or "").strip().lower()
+    if any(token in text for token in ["chair", "table", "desk", "sofa", "furniture"]):
+        return "furniture"
+    if any(token in text for token in ["phone", "laptop", "camera", "watch", "headphone", "electronic", "electronics"]):
+        return "electronics"
+    if any(token in text for token in ["shirt", "shoe", "dress", "jacket", "clothing", "fashion"]):
+        return "clothing"
+    if any(token in text for token in ["decor", "decoration", "home", "lamp", "vase"]):
+        return "decor"
+    return "other"
+
+
+def _normalize_condition(value: object) -> str:
+    text = str(value or "").strip().lower()
+    if any(token in text for token in ["new", "unused", "sealed"]):
+        return "new"
+    if any(token in text for token in ["like new", "excellent", "excellent condition", "mint"]):
+        return "like-new"
+    if any(token in text for token in ["fair", "worn", "scratch", "scratched", "damaged"]):
+        return "fair"
+    return "good"
+
+
+def _normalize_price_strategy(value: object) -> str:
+    text = str(value or "").strip().lower().replace("-", "_").replace(" ", "_")
+    if text in {"sell_fast", "fast", "sellfast"}:
+        return "sell_fast"
+    if text in {"maximize", "maximise", "max"}:
+        return "maximize"
+    return "balanced"
+
+
+def _ensure_text(value: object, fallback: str) -> str:
+    text = str(value or "").strip()
+    return text if text else fallback
+
+
+def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], prompt: str) -> dict:
+    with open(file_path, "rb") as image_file:
+        image_b64 = base64.b64encode(image_file.read()).decode("ascii")
+
+    payload = {
+        "contents": [
+            {
+                "role": "user",
+                "parts": [
+                    {"text": prompt},
+                    {
+                        "inline_data": {
+                            "mime_type": mime_type or "image/jpeg",
+                            "data": image_b64,
+                        }
+                    },
+                ],
+            }
+        ],
+        "generationConfig": {
+            "response_mime_type": "application/json",
+            "temperature": 0.2,
+        },
+    }
+
+    request = urllib.request.Request(
+        f"{GEMINI_API_URL}/{DEFAULT_MODEL}:generateContent?key={api_key}",
+        data=json.dumps(payload).encode("utf-8"),
+        headers={"Content-Type": "application/json"},
+        method="POST",
+    )
+
+    with urllib.request.urlopen(request, timeout=90) as response:
+        body = response.read().decode("utf-8")
+    return json.loads(body)
+
+
 def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: str) -> ListingAnalysis:
     api_key = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
     if not api_key:
-        return _mock_analysis(filename)
-
-    try:
-        from google import genai
-    except ImportError:
         return _mock_analysis(filename)
 
     prompt = (
@@ -153,25 +244,39 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         "Price should be conservative when confidence is low."
     )
 
-    client = genai.Client()
-    uploaded_file = client.files.upload(
-        file=file_path,
-        config={"mimeType": mime_type or "image/jpeg"},
-    )
-    response = client.models.generate_content(
-        model=DEFAULT_MODEL,
-        contents=[uploaded_file, prompt],
-        config={
-            "response_format": {
-                "text": {
-                    "mime_type": "application/json",
-                    "schema": ListingAnalysis.model_json_schema(),
-                }
-            }
-        },
-    )
-
-    if not getattr(response, "text", None):
+    try:
+        response = _call_gemini_rest(api_key, file_path, mime_type, prompt)
+        text = (
+            response.get("candidates", [{}])[0]
+            .get("content", {})
+            .get("parts", [{}])[0]
+            .get("text", "")
+        )
+        payload = _extract_json_payload(text)
+        payload["title"] = _ensure_text(payload.get("title"), "Second-Hand Item")
+        payload["description"] = _ensure_text(
+            payload.get("description"),
+            "Practical second-hand item with straightforward listing copy and room for seller edits.",
+        )
+        payload["price_rationale"] = _ensure_text(
+            payload.get("price_rationale"),
+            "Balanced price follows market range for steady sale.",
+        )
+        payload["quality_note"] = _ensure_text(
+            payload.get("quality_note"),
+            "Photo is usable, but seller should confirm item details before publishing.",
+        )
+        payload["rationale"] = _ensure_text(
+            payload.get("rationale"),
+            "Draft is based on the visible item and conservative pricing.",
+        )
+        payload["category"] = _normalize_category(payload.get("category"))
+        payload["condition"] = _normalize_condition(payload.get("condition"))
+        payload["price_strategy"] = _normalize_price_strategy(payload.get("price_strategy"))
+        return ListingAnalysis.model_validate(payload)
+    except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
+        print(f"Gemini analysis failed, using mock fallback: {exc}")
         return _mock_analysis(filename)
-
-    return ListingAnalysis.model_validate_json(response.text)
+    except Exception as exc:
+        print(f"Gemini analysis failed, using mock fallback: {exc}")
+        return _mock_analysis(filename)
