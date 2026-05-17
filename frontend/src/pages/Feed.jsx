@@ -166,10 +166,14 @@ const Feed = () => {
       transition={{ duration: 0.35, delay: Math.min(index * 0.04, 0.2) }}
       onClick={() => handleOpenListing(listing)}
       className={`bg-surface-card rounded-xl border border-border-subtle overflow-hidden hover:shadow-lg transition-shadow duration-300 group cursor-pointer flex ${
-        compact ? 'flex-row min-w-[260px] max-w-[340px] h-36' : viewMode === 'grid' ? 'flex-col' : 'flex-row h-40 md:h-48'
+        compact
+          ? 'flex-col min-w-[280px] max-w-[320px] w-[280px] sm:w-[300px] lg:w-[320px]'
+          : viewMode === 'grid'
+            ? 'flex-col'
+            : 'flex-row h-40 md:h-48'
       }`}
     >
-      <div className={`relative bg-surface-muted overflow-hidden shrink-0 ${compact ? 'w-28 h-full' : viewMode === 'grid' ? 'aspect-square w-full' : 'w-40 md:w-48 h-full'}`}>
+      <div className={`relative bg-surface-muted overflow-hidden shrink-0 ${compact ? 'w-full aspect-[4/3]' : viewMode === 'grid' ? 'aspect-square w-full' : 'w-40 md:w-48 h-full'}`}>
         <img
           src={`http://localhost:8000/static/images/${listing.image_url}`}
           alt={listing.title}
@@ -199,22 +203,24 @@ const Feed = () => {
           </span>
         </button>
       </div>
-      <div className={`p-sm md:p-md flex flex-col flex-grow justify-between ${viewMode === 'list' ? 'py-4 pr-6' : ''}`}>
+      <div className={`p-sm md:p-md flex flex-col flex-grow justify-between ${compact ? 'min-h-0' : viewMode === 'list' ? 'py-4 pr-6' : ''}`}>
         <div>
-          <div className="flex items-center justify-between gap-2 mb-1">
-            <div className="font-headline-md text-headline-md text-on-background">₺{listing.selected_price}</div>
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70">
+          <div className={`flex items-center justify-between gap-2 mb-1 ${compact ? 'pt-1' : ''}`}>
+            <div className={`${compact ? 'font-headline-md text-display-sm-mobile' : 'font-headline-md text-headline-md'} text-on-background`}>
+              ₺{listing.selected_price}
+            </div>
+            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70 shrink-0">
               {Math.round((listing.feed_score || 0) * 10) / 10}
             </span>
           </div>
-          <h3 className="font-title-card text-title-card text-on-surface-variant truncate mb-2">{listing.title}</h3>
-          {listing.feed_reason && (
-            <p className="text-xs text-text-secondary leading-relaxed mb-2 line-clamp-2">
-              {listing.feed_reason}
-            </p>
-          )}
+          <h3 className={`font-title-card text-on-surface-variant mb-2 ${compact ? 'text-sm leading-snug line-clamp-2' : 'text-title-card truncate'}`}>
+            {listing.title}
+          </h3>
+          <p className={`text-text-secondary leading-relaxed ${compact ? 'text-xs line-clamp-3' : 'text-xs line-clamp-2 mb-2'}`}>
+            {listing.feed_reason || listing.description || 'Quality product from a verified seller.'}
+          </p>
           {compact && topCategory && (
-            <p className="text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">
+            <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">
               {topCategory.name}
             </p>
           )}
@@ -224,7 +230,7 @@ const Feed = () => {
             </p>
           )}
         </div>
-        <div className="flex items-center justify-between pt-sm border-t border-border-subtle mt-auto">
+        <div className={`flex items-center justify-between pt-sm border-t border-border-subtle mt-auto ${compact ? 'mt-3' : ''}`}>
           <div className="flex items-center gap-xs">
             <div className="w-5 h-5 rounded-full overflow-hidden bg-surface-muted flex items-center justify-center text-[10px] font-bold text-on-surface-variant">
               {getAvatarSrc(listing.author?.avatar_url) ? (
@@ -320,7 +326,7 @@ const Feed = () => {
               </span>
             )}
           </div>
-          <div className="flex gap-4 overflow-x-auto pb-2 no-scrollbar">
+          <div className="grid grid-flow-col auto-cols-max gap-4 overflow-x-auto pb-2 no-scrollbar snap-x snap-mandatory">
             {forYouListings.map((listing, index) => renderFeedCard(listing, index, true))}
           </div>
         </section>
