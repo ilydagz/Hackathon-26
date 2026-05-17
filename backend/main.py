@@ -39,8 +39,8 @@ app.add_middleware(
 )
 
 BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
-GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemini-2.5-flash-lite")
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemma-4-31b-it")
+GEMINI_FALLBACK_MODEL = os.getenv("GEMINI_FALLBACK_MODEL", "gemma-4-26b-a4b-it")
 GEMINI_API_URL = "https://generativelanguage.googleapis.com/v1beta/models"
 UPLOAD_DIR = os.path.join(BASE_DIR, "static", "images")
 AVATAR_DIR = os.path.join(BASE_DIR, "static", "avatars")
@@ -142,7 +142,7 @@ def gemini_model_candidates() -> List[str]:
 
 
 def is_gemini_rate_limit(exc: Exception) -> bool:
-    return isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 503}
+    return isinstance(exc, urllib.error.HTTPError) and exc.code in {429, 500, 503}
 
 def call_gemini_json(prompt: str, payload: dict, temperature: float = 0.2) -> dict:
     api_key = get_gemini_api_key()
