@@ -42,4 +42,4 @@ cd backend
 python seed.py
 ```
 
-This seeds about 1000 listings across electronics, furniture, clothing, decor, and other categories, plus feed events that bias one demo user toward phones.
+This seeds 100 listings across electronics, furniture, clothing, decor, and other categories, plus feed events that bias one demo user toward phones.

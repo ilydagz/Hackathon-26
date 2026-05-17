@@ -198,6 +198,34 @@ TOKEN_SYNONYMS = {
     "bike": {"bike", "bikes", "bicycle", "bicycles", "mountain", "road"},
 }
 
+CATEGORY_ALIASES = {
+    "tech": "electronics",
+    "technology": "electronics",
+    "electronics": "electronics",
+    "phone": "electronics",
+    "phones": "electronics",
+    "mobile": "electronics",
+    "smartphone": "electronics",
+    "laptop": "electronics",
+    "laptops": "electronics",
+    "audio": "electronics",
+    "gaming": "electronics",
+    "camera": "electronics",
+    "cameras": "electronics",
+    "wearables": "electronics",
+    "furniture": "furniture",
+    "clothing": "clothing",
+    "decor": "decor",
+    "other": "other",
+    "all": "all",
+}
+
+
+def normalize_category_filter(value: Optional[str]) -> str:
+    if not value:
+        return "all"
+    return CATEGORY_ALIASES.get(value.strip().lower(), value.strip().lower())
+
 
 def expand_tokens(tokens: List[str]) -> List[str]:
     expanded = set(tokens)
@@ -328,6 +356,7 @@ def score_listing(listing: models.Listing, profile: dict, search: Optional[str],
     return score, signals[:4], badge, reason
 
 def build_feed_response(db: Session, current_user: Optional[models.User], category: Optional[str], search: Optional[str]):
+    category = normalize_category_filter(category)
     query = db.query(models.Listing).filter(models.Listing.status == "active")
     if category and category != "all":
         query = query.filter((models.Listing.category == category) | (models.Listing.subcategory == category))
@@ -642,6 +671,8 @@ def delete_user(user_id: int, request: Request, admin: models.User = Depends(get
 
 @app.get("/api/listings", response_model=List[schemas.ListingResponse])
 def get_listings(category: Optional[str] = None, subcategory: Optional[str] = None, search: Optional[str] = None, db: Session = Depends(get_db)):
+    category = normalize_category_filter(category)
+    subcategory = normalize_category_filter(subcategory)
     query = db.query(models.Listing).filter(models.Listing.status == "active")
     
     if category and category != "all":
@@ -668,6 +699,7 @@ def get_feed(
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
+    category = normalize_category_filter(category)
     current_user = get_optional_user(authorization, db)
     return build_feed_response(db, current_user, category, search)
 

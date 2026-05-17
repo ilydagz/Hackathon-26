@@ -7,7 +7,7 @@ import models
 from main import hash_password
 
 RNG = random.Random(26)
-TOTAL_LISTINGS = 1000
+TOTAL_LISTINGS = 100
 
 
 def weighted_choice(rng, items):
@@ -533,19 +533,19 @@ def make_other_listing(rng):
 
 def build_listings(db, users):
     category_plan = [
-        ("electronics", 280),
-        ("furniture", 250),
-        ("clothing", 250),
-        ("decor", 140),
-        ("other", 80),
+        ("electronics", 35),
+        ("furniture", 25),
+        ("clothing", 20),
+        ("decor", 10),
+        ("other", 10),
     ]
 
     builders = {
         "electronics": [
-            (make_phone_listing, 0.44),
-            (make_laptop_listing, 0.2),
+            (make_phone_listing, 0.48),
+            (make_laptop_listing, 0.18),
             (make_audio_listing, 0.14),
-            (make_gaming_listing, 0.12),
+            (make_gaming_listing, 0.1),
             (make_camera_listing, 0.06),
             (make_wearable_listing, 0.04),
         ],
@@ -633,25 +633,25 @@ def seed_feed_events(db, users, listings):
     phone_queries = ["iphone 15", "phone", "samsung galaxy", "pixel phone", "used iphone"]
     for query in phone_queries:
         db.add(models.FeedEvent(user_id=phone_user.id, event_type="search", category="electronics", query=query, event_metadata={"source": "seed"}))
-    for listing in RNG.sample(phone_listings, min(24, len(phone_listings))):
-        db.add(models.FeedEvent(user_id=phone_user.id, event_type="open", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
     for listing in RNG.sample(phone_listings, min(10, len(phone_listings))):
+        db.add(models.FeedEvent(user_id=phone_user.id, event_type="open", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
+    for listing in RNG.sample(phone_listings, min(5, len(phone_listings))):
         db.add(models.FeedEvent(user_id=phone_user.id, event_type="favorite", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
-    for listing in RNG.sample(phone_listings, min(12, len(phone_listings))):
+    for listing in RNG.sample(phone_listings, min(8, len(phone_listings))):
         db.add(models.FeedEvent(user_id=phone_user.id, event_type="impression", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
 
     home_queries = ["sofa", "coffee table", "desk chair", "home decor"]
     for query in home_queries:
         db.add(models.FeedEvent(user_id=home_user.id, event_type="search", category="furniture", query=query, event_metadata={"source": "seed"}))
-    for listing in RNG.sample(furniture_listings, min(18, len(furniture_listings))):
+    for listing in RNG.sample(furniture_listings, min(8, len(furniture_listings))):
         db.add(models.FeedEvent(user_id=home_user.id, event_type="open", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
-    for listing in RNG.sample(decor_listings, min(10, len(decor_listings))):
+    for listing in RNG.sample(decor_listings, min(4, len(decor_listings))):
         db.add(models.FeedEvent(user_id=home_user.id, event_type="favorite", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
 
     fashion_queries = ["nike hoodie", "zara shirt", "levi jeans", "winter jacket"]
     for query in fashion_queries:
         db.add(models.FeedEvent(user_id=fashion_user.id, event_type="search", category="clothing", query=query, event_metadata={"source": "seed"}))
-    for listing in RNG.sample(clothing_listings, min(18, len(clothing_listings))):
+    for listing in RNG.sample(clothing_listings, min(8, len(clothing_listings))):
         db.add(models.FeedEvent(user_id=fashion_user.id, event_type="open", listing_id=listing.id, category=listing.category, event_metadata={"source": "seed"}))
 
     db.commit()
