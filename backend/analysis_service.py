@@ -172,6 +172,37 @@ def _ensure_text(value: object, fallback: str) -> str:
     return text if text else fallback
 
 
+def _ensure_int(value: object, fallback: int) -> int:
+    if isinstance(value, bool):
+        return fallback
+    if isinstance(value, int):
+        return value
+    if isinstance(value, float):
+        return max(1, round(value))
+    text = str(value or "").strip()
+    if not text:
+        return fallback
+    digits = "".join(ch for ch in text if ch.isdigit() or ch == ".")
+    if not digits:
+        return fallback
+    try:
+        return max(1, round(float(digits)))
+    except ValueError:
+        return fallback
+
+
+def _default_price_pair(category: str) -> tuple[int, int, float]:
+    if category == "furniture":
+        return 850, 1100, 0.72
+    if category == "electronics":
+        return 1500, 1900, 0.68
+    if category == "clothing":
+        return 350, 500, 0.64
+    if category == "decor":
+        return 450, 650, 0.62
+    return 500, 650, 0.55
+
+
 def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], prompt: str) -> dict:
     with open(file_path, "rb") as image_file:
         image_b64 = base64.b64encode(image_file.read()).decode("ascii")
@@ -273,6 +304,18 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         payload["category"] = _normalize_category(payload.get("category"))
         payload["condition"] = _normalize_condition(payload.get("condition"))
         payload["price_strategy"] = _normalize_price_strategy(payload.get("price_strategy"))
+        default_quick, default_market, default_confidence = _default_price_pair(payload["category"])
+        payload["confidence"] = float(payload.get("confidence") or default_confidence)
+        payload["quick_price"] = _ensure_int(payload.get("quick_price"), default_quick)
+        payload["market_price"] = _ensure_int(payload.get("market_price"), default_market)
+        payload["price_floor"] = _ensure_int(payload.get("price_floor"), max(1, round(payload["quick_price"] * 0.9)))
+        payload["price_ceiling"] = _ensure_int(
+            payload.get("price_ceiling"),
+            max(payload["market_price"], round(payload["market_price"] * 1.15)),
+        )
+        if payload["price_ceiling"] < payload["price_floor"]:
+            payload["price_ceiling"] = max(payload["price_floor"], payload["market_price"])
+        payload["confidence"] = min(1.0, max(0.0, payload["confidence"]))
         return ListingAnalysis.model_validate(payload)
     except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
         print(f"Gemini analysis failed, using mock fallback: {exc}")
