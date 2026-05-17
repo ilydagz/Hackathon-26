@@ -18,6 +18,22 @@ const Chat = () => {
 
   const emojis = ['😊', '😂', '😍', '👋', '👍', '🙏', '💯', '🔥', '✨', '📦', '💰'];
 
+  const getAvatarSrc = (avatarUrl) => {
+    if (!avatarUrl) return '';
+    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+  };
+
+  const renderAvatar = (user) => {
+    const avatarSrc = getAvatarSrc(user?.avatar_url);
+    const initials = (user?.name || 'U').substring(0, 2).toUpperCase();
+
+    if (avatarSrc) {
+      return <img src={avatarSrc} alt={user?.name || 'User'} className="w-full h-full object-cover" />;
+    }
+
+    return <span>{initials}</span>;
+  };
+
   useEffect(() => {
     const fetchChats = async () => {
       try {
@@ -114,8 +130,8 @@ const Chat = () => {
                 onClick={() => setActiveChat(chat)}
                 className={`w-full flex items-center gap-sm p-3 rounded-xl transition-all ${activeChat?.id === chat.id ? 'bg-primary-container/10 border border-primary/20 shadow-sm' : 'hover:bg-surface-muted border border-transparent'}`}
               >
-                <div className="w-12 h-12 rounded-xl bg-surface-muted flex items-center justify-center font-title-card text-title-card text-on-surface-variant shrink-0">
-                  {otherName.substring(0, 2).toUpperCase()}
+                <div className="w-12 h-12 rounded-full overflow-hidden bg-surface-muted flex items-center justify-center font-title-card text-title-card text-on-surface-variant shrink-0">
+                  {renderAvatar(otherUser)}
                 </div>
                 <div className="flex-grow text-left overflow-hidden">
                   <div className="flex justify-between items-center mb-1">
@@ -137,8 +153,8 @@ const Chat = () => {
           <>
             <header className="px-lg py-4 border-b border-border-subtle flex items-center justify-between bg-surface-card/90 backdrop-blur-sm z-10">
               <div className="flex items-center gap-sm">
-                <div className="w-10 h-10 rounded-xl bg-surface-muted flex items-center justify-center font-title-card text-title-card text-on-surface-variant">
-                   {(Number(activeChat.sender_id) === currentUserId ? activeChat.receiver?.name : activeChat.sender?.name)?.substring(0, 2).toUpperCase() || 'U'}
+                <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-muted flex items-center justify-center font-title-card text-title-card text-on-surface-variant">
+                   {renderAvatar(Number(activeChat.sender_id) === currentUserId ? activeChat.receiver : activeChat.sender)}
                 </div>
                 <div>
                   <h3 className="font-title-card text-title-card text-on-background leading-none mb-1">

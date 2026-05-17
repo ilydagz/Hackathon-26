@@ -17,9 +17,13 @@ const Navbar = () => {
   const [isAIModalOpen, setIsAIModalOpen] = useState(false);
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [showNotifications, setShowNotifications] = useState(false);
-  const [user, setUser] = useState({ name: 'User' });
+  const [user, setUser] = useState({ name: 'User', avatar_url: null });
   const [activeToast, setActiveToast] = useState(null);
   const [lastNotificationId, setLastNotificationId] = useState(0);
+
+  const avatarSrc = user.avatar_url
+    ? (user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:8000/static/${user.avatar_url}`)
+    : '';
 
   useEffect(() => {
     if (notifications.length > 0) {
@@ -87,6 +91,20 @@ const Navbar = () => {
             ))}
 
             <div className="flex items-center gap-sm ml-4">
+              <Link
+                to="/profile"
+                className="hidden lg:flex items-center gap-2 rounded-full border border-border-subtle bg-surface-muted/60 px-2 py-1 pr-3 hover:bg-surface-muted transition-colors"
+              >
+                <div className="w-8 h-8 rounded-full overflow-hidden bg-surface-muted flex items-center justify-center text-xs font-bold text-on-surface-variant">
+                  {avatarSrc ? (
+                    <img src={avatarSrc} alt={user.name || 'Profile'} className="w-full h-full object-cover" />
+                  ) : (
+                    (user.name || 'U').substring(0, 2).toUpperCase()
+                  )}
+                </div>
+                <span className="font-body-sm text-body-sm text-on-surface-variant max-w-[120px] truncate">{user.name || t('profile.info')}</span>
+              </Link>
+
               {/* Notifications */}
               <div className="relative">
                 <button 
@@ -182,8 +200,8 @@ const Navbar = () => {
 
         {/* Mobile Navigation Overlay */}
         <AnimatePresence>
-          {isOpen && (
-            <motion.div 
+                {isOpen && (
+                  <motion.div 
               initial={{ opacity: 0, height: 0 }}
               animate={{ opacity: 1, height: 'auto' }}
               exit={{ opacity: 0, height: 0 }}
@@ -200,6 +218,24 @@ const Navbar = () => {
                     {link.name}
                   </NavLink>
                 ))}
+
+                <Link
+                  to="/profile"
+                  onClick={() => setIsOpen(false)}
+                  className="flex items-center justify-center gap-3 rounded-2xl border border-border-subtle bg-surface-muted/60 px-4 py-3"
+                >
+                  <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-card flex items-center justify-center text-sm font-bold text-on-surface-variant">
+                    {avatarSrc ? (
+                      <img src={avatarSrc} alt={user.name || 'Profile'} className="w-full h-full object-cover" />
+                    ) : (
+                      (user.name || 'U').substring(0, 2).toUpperCase()
+                    )}
+                  </div>
+                  <div className="text-left">
+                    <p className="font-title-card text-sm text-on-surface">{user.name || t('profile.info')}</p>
+                    <p className="font-body-sm text-[11px] text-text-secondary">{t('nav.profile')}</p>
+                  </div>
+                </Link>
                 
                 <div className="flex justify-center gap-lg py-4 border-y border-border-subtle">
                    <button 

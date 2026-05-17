@@ -1,7 +1,7 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
-import { Camera, Loader2, Trash2, Upload, UserRound, BadgeCheck, Mail, MapPin } from 'lucide-react';
+import { Camera, Loader2, Trash2, Upload, BadgeCheck, Mail, MapPin } from 'lucide-react';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
 import { api } from '../api';
@@ -22,7 +22,6 @@ const Profile = () => {
     bio: '',
     avatar_url: null
   });
-  const [avatarFile, setAvatarFile] = useState(null);
   const [avatarPreview, setAvatarPreview] = useState('');
   const [allCountries, setAllCountries] = useState({});
   const [selectedCountry, setSelectedCountry] = useState('');
@@ -115,14 +114,12 @@ const Profile = () => {
       return;
     }
 
-    setAvatarFile(file);
     syncAvatarPreview(file);
 
     try {
       setAvatarSaving(true);
       const updated = await api.updateMeAvatar(file);
       setUserData(prev => ({ ...prev, avatar_url: updated.avatar_url }));
-      setAvatarFile(null);
       addNotification({
         titleKey: 'profile.avatarUpdated',
         messageKey: 'profile.avatarUpdatedDesc',
@@ -148,7 +145,6 @@ const Profile = () => {
       setAvatarDeleting(true);
       await api.deleteMeAvatar();
       setUserData(prev => ({ ...prev, avatar_url: null }));
-      setAvatarFile(null);
       if (avatarObjectUrlRef.current) {
         URL.revokeObjectURL(avatarObjectUrlRef.current);
         avatarObjectUrlRef.current = null;

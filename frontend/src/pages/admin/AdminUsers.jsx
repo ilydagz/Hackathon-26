@@ -10,6 +10,11 @@ const AdminUsers = () => {
   const { addNotification } = useNotifications();
   const currentUserId = Number(localStorage.getItem('userId'));
 
+  const getAvatarSrc = (avatarUrl) => {
+    if (!avatarUrl) return '';
+    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+  };
+
   const fetchUsers = async () => {
     try {
       const data = await api.getUsers();
@@ -103,6 +108,7 @@ const AdminUsers = () => {
             <thead>
               <tr className="bg-surface-muted border-b border-border-subtle font-label-caps text-label-caps text-text-secondary uppercase tracking-wider">
                 <th className="p-4">User ID</th>
+                <th className="p-4">Avatar</th>
                 <th className="p-4">Name</th>
                 <th className="p-4">Email</th>
                 <th className="p-4">Role</th>
@@ -115,6 +121,15 @@ const AdminUsers = () => {
               {filteredUsers.map(user => (
                 <tr key={user.id} className="border-b border-border-subtle hover:bg-surface-muted transition-colors">
                   <td className="p-4 font-title-card text-title-card">{user.id}</td>
+                  <td className="p-4">
+                    <div className="w-10 h-10 rounded-full overflow-hidden bg-surface-muted flex items-center justify-center text-xs font-bold text-on-surface-variant">
+                      {getAvatarSrc(user.avatar_url) ? (
+                        <img src={getAvatarSrc(user.avatar_url)} alt={user.name} className="w-full h-full object-cover" />
+                      ) : (
+                        user.name.substring(0, 2).toUpperCase()
+                      )}
+                    </div>
+                  </td>
                   <td className="p-4 font-bold">{user.name}</td>
                   <td className="p-4">{user.email}</td>
                   <td className="p-4">

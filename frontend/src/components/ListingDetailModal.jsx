@@ -13,6 +13,11 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const currentUserId = Number(localStorage.getItem('userId'));
 
+  const getAvatarSrc = (avatarUrl) => {
+    if (!avatarUrl) return '';
+    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+  };
+
   useEffect(() => {
     const checkFavorite = async () => {
       if (!listing || isOwner) return;
@@ -180,7 +185,11 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
                 
                 <div className="mt-lg pt-lg border-t border-border-subtle flex items-center gap-md">
                   <div className="w-12 h-12 rounded-full bg-surface-muted flex items-center justify-center font-title-card text-on-surface-variant">
-                    {listing.author?.name?.substring(0, 2).toUpperCase() || 'U'}
+                    {getAvatarSrc(listing.author?.avatar_url) ? (
+                      <img src={getAvatarSrc(listing.author?.avatar_url)} alt={listing.author?.name || 'Seller'} className="w-full h-full object-cover" />
+                    ) : (
+                      listing.author?.name?.substring(0, 2).toUpperCase() || 'U'
+                    )}
                   </div>
                   <div>
                     <p className="font-title-card text-title-card text-on-surface">{listing.author?.name || t('listing.seller')}</p>

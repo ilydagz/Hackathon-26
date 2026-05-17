@@ -17,6 +17,11 @@ const Feed = () => {
   const [selectedCategory, setSelectedCategory] = useState('all');
   const [selectedListing, setSelectedListing] = useState(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+
+  const getAvatarSrc = (avatarUrl) => {
+    if (!avatarUrl) return '';
+    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+  };
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [popularIndex, setPopularIndex] = useState(0);
 
@@ -188,6 +193,13 @@ const Feed = () => {
                 </div>
                 <div className="flex items-center justify-between pt-sm border-t border-border-subtle mt-auto">
                   <div className="flex items-center gap-xs">
+                    <div className="w-5 h-5 rounded-full overflow-hidden bg-surface-muted flex items-center justify-center text-[10px] font-bold text-on-surface-variant">
+                      {getAvatarSrc(listing.author?.avatar_url) ? (
+                        <img src={getAvatarSrc(listing.author?.avatar_url)} alt={listing.author?.name || 'Seller'} className="w-full h-full object-cover" />
+                      ) : (
+                        (listing.author ? listing.author.name : 'U').substring(0, 1).toUpperCase()
+                      )}
+                    </div>
                     <span className="material-symbols-outlined text-primary text-[16px]">verified</span>
                     <span className="font-body-sm text-body-sm text-text-secondary truncate">@{listing.author ? listing.author.name : 'Unknown'}</span>
                   </div>
