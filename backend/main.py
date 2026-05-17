@@ -5,7 +5,7 @@ import hashlib
 import secrets
 import uuid
 from typing import List, Optional
-from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Header, Request
+from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Header, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.staticfiles import StaticFiles
 from sqlalchemy.orm import Session
@@ -14,7 +14,7 @@ from sqlalchemy import desc, inspect, text
 import models
 import schemas
 from analysis_service import analyze_listing_image
-from database import engine, get_db
+from database import engine, get_db, SessionLocal
 
 # Create database tables
 models.Base.metadata.create_all(bind=engine)
@@ -78,6 +78,30 @@ def delete_static_asset(asset_url: Optional[str]):
             os.remove(file_path)
         except OSError:
             pass
+
+
+def analyze_job_worker(job_id: int, file_path: str, mime_type: Optional[str], filename: str):
+    db = SessionLocal()
+    try:
+        job = db.query(models.AnalysisJob).filter(models.AnalysisJob.id == job_id).first()
+        if not job:
+            return
+
+        job.status = "processing"
+        db.commit()
+
+        analysis = analyze_listing_image(file_path, mime_type, filename)
+        job.status = "completed"
+        job.result_json = analysis.model_dump()
+        db.commit()
+    except Exception as exc:
+        job = db.query(models.AnalysisJob).filter(models.AnalysisJob.id == job_id).first()
+        if job:
+            job.status = "failed"
+            job.error_message = str(exc)
+            db.commit()
+    finally:
+        db.close()
 
 def ensure_user_avatar_column():
     inspector = inspect(engine)
@@ -393,49 +417,38 @@ def get_logs(admin: models.User = Depends(get_admin_user), db: Session = Depends
 
 # --- AI ENDPOINT (MOCKED) ---
 
-@app.post("/api/analyze", response_model=schemas.AIAnalysisResponse)
+@app.post("/api/analyze", response_model=schemas.AnalysisJobResponse)
 async def analyze_image(
+    background_tasks: BackgroundTasks,
     file: UploadFile = File(...),
     authorization: Optional[str] = Header(None),
     db: Session = Depends(get_db),
 ):
-    file_path = os.path.join(UPLOAD_DIR, file.filename)
+    original_name = file.filename or "upload.jpg"
+    safe_name = f"{uuid.uuid4().hex}-{os.path.basename(original_name)}"
+    file_path = os.path.join(UPLOAD_DIR, safe_name)
     with open(file_path, "wb") as buffer:
         shutil.copyfileobj(file.file, buffer)
 
     job = models.AnalysisJob(
         user_id=resolve_session_user_id(authorization),
-        status="processing",
-        image_url=file.filename,
-        image_name=file.filename,
+        status="queued",
+        image_url=safe_name,
+        image_name=original_name,
         model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
     )
     db.add(job)
     db.commit()
     db.refresh(job)
 
-    try:
-        analysis = await asyncio.to_thread(
-            analyze_listing_image,
-            file_path,
-            file.content_type,
-            file.filename,
-        )
-        job.status = "completed"
-        job.result_json = analysis.model_dump()
-        db.commit()
-        db.refresh(job)
-        return {
-            "job_id": job.id,
-            "status": job.status,
-            **analysis.model_dump(),
-        }
-    except Exception as exc:
-        job.status = "failed"
-        job.error_message = str(exc)
-        db.commit()
-        db.refresh(job)
-        raise HTTPException(status_code=500, detail="AI analysis failed")
+    background_tasks.add_task(
+        analyze_job_worker,
+        job.id,
+        file_path,
+        file.content_type,
+        original_name,
+    )
+    return job
 
 
 @app.get("/api/analyze/jobs/{job_id}", response_model=schemas.AnalysisJobResponse)

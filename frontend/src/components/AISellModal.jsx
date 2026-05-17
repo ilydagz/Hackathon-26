@@ -15,6 +15,7 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const [analyzing, setAnalyzing] = useState(false);
   const [analysisError, setAnalysisError] = useState('');
   const [analysisJobId, setAnalysisJobId] = useState(null);
+  const [analysisStatus, setAnalysisStatus] = useState('');
   const [drafts, setDrafts] = useState([]);
   const [selectedDraftId, setSelectedDraftId] = useState(null);
   
@@ -56,30 +57,12 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
   const startAnalysis = async (file) => {
     setAnalyzing(true);
     setAnalysisError('');
+    setAnalysisStatus('queued');
     setStep(2);
     try {
       const data = await api.analyzeListing(file);
       setAnalysisJobId(data.job_id);
-      setAiData({
-        title: data.title,
-        description: data.description,
-        quick_price: data.quick_price,
-        market_price: data.market_price,
-        category: data.category,
-        condition: data.condition,
-        confidence: data.confidence,
-        needs_more_photos: data.needs_more_photos,
-        rationale: data.rationale,
-        suggested_attributes: data.suggested_attributes || {}
-      });
-      setDraftTitle(data.title);
-      setDraftDescription(data.description);
-      setDraftCategory(data.category || 'furniture');
-      setDraftCondition(data.condition || 'good');
-      setAttributes(data.suggested_attributes || {});
-      setSelectedPrice('quick');
-      setCustomPrice('');
-      setStep(3);
+      pollAnalysisJob(data.job_id);
     } catch (err) {
       console.error(err);
       setAnalysisError('Analysis failed. Try another photo or retry upload.');
@@ -87,6 +70,66 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
     } finally {
       setAnalyzing(false);
     }
+  };
+
+  const applyAnalysisResult = (parsed) => {
+    setAiData({
+      title: parsed.title,
+      description: parsed.description,
+      quick_price: parsed.quick_price,
+      market_price: parsed.market_price,
+      category: parsed.category,
+      condition: parsed.condition,
+      confidence: parsed.confidence,
+      needs_more_photos: parsed.needs_more_photos,
+      rationale: parsed.rationale,
+      suggested_attributes: parsed.suggested_attributes || {}
+    });
+    setDraftTitle(parsed.title || '');
+    setDraftDescription(parsed.description || '');
+    setDraftCategory(parsed.category || 'furniture');
+    setDraftCondition(parsed.condition || 'good');
+    setAttributes(parsed.suggested_attributes || {});
+    setSelectedPrice('quick');
+    setCustomPrice('');
+    setStep(3);
+  };
+
+  const pollAnalysisJob = (jobId) => {
+    const startedAt = Date.now();
+    const maxWaitMs = 30000;
+
+    const tick = async () => {
+      try {
+        const job = await api.getAnalysisJob(jobId);
+        setAnalysisStatus(job.status);
+
+        if (job.status === 'completed') {
+          applyAnalysisResult(job.result_json || {});
+          return;
+        }
+
+        if (job.status === 'failed') {
+          setAnalysisError(job.error_message || 'Analysis failed. Try another photo or retry upload.');
+          setStep(1);
+          return;
+        }
+
+        if (Date.now() - startedAt > maxWaitMs) {
+          setAnalysisError('Analysis timed out. Try again.');
+          setStep(1);
+          return;
+        }
+
+        setTimeout(tick, 1000);
+      } catch (err) {
+        console.error(err);
+        setAnalysisError('Analysis failed. Try another photo or retry upload.');
+        setStep(1);
+      }
+    };
+
+    setTimeout(tick, 800);
   };
 
   const handleSaveDraft = async () => {
@@ -307,6 +350,14 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                    <div className="w-32 h-32 rounded-full bg-surface-container-high flex items-center justify-center animate-pulse">
                     <span className="material-symbols-outlined text-primary" style={{fontSize: '48px', fontVariationSettings: "'FILL' 1"}}>auto_awesome</span>
                   </div>
+                </div>
+                <div className="text-center">
+                  <p className="font-title-card text-title-card text-on-surface">
+                    {analysisStatus === 'queued' ? 'Queued' : analysisStatus === 'processing' ? 'Analyzing' : 'Waiting'}
+                  </p>
+                  {analysisJobId && (
+                    <p className="font-body-sm text-body-sm text-text-secondary mt-2">Job #{analysisJobId}</p>
+                  )}
                 </div>
               </div>
             )}

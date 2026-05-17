@@ -98,6 +98,12 @@ export const api = {
     return res.json();
   },
 
+  getAnalysisJob: async (jobId) => {
+    const res = await fetch(`${API_URL}/analyze/jobs/${jobId}`);
+    if (!res.ok) throw new Error(await res.text());
+    return res.json();
+  },
+
   deleteListing: async (id) => {
     const res = await fetch(`${API_URL}/listings/${id}`, {
       method: 'DELETE',
