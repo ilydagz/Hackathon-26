@@ -23,3 +23,12 @@ camera in, item draft out, price options ready, publish with one decision.
 - Local dev can run with SQLite and mocked AI.
 - Production target should move to Postgres, object storage, queue/workers, and observability.
 - Frontend stays mobile-first and route-driven.
+
+## Gemini Setup
+
+Set the backend env vars before starting the API:
+
+- `GOOGLE_API_KEY` or `GEMINI_API_KEY`
+- optional `GEMINI_MODEL=gemini-2.5-flash-lite`
+
+If no key is present, the app falls back to mock analysis.

@@ -2,8 +2,12 @@ import os
 import shutil
 import asyncio
 import hashlib
+import math
 import secrets
 import uuid
+import re
+from collections import Counter
+from datetime import datetime
 from typing import List, Optional
 from fastapi import FastAPI, Depends, UploadFile, File, HTTPException, Header, Request, BackgroundTasks
 from fastapi.middleware.cors import CORSMiddleware
@@ -147,6 +151,230 @@ def log_action(db: Session, action: str, result: str, user_id: Optional[int] = N
     db.add(new_log)
     db.commit()
 
+def get_optional_user(authorization: Optional[str], db: Session) -> Optional[models.User]:
+    user_id = resolve_session_user_id(authorization)
+    if not user_id:
+        return None
+    user = db.query(models.User).filter(models.User.id == user_id).first()
+    if not user or user.status == "suspended":
+        return None
+    return user
+
+def normalize_tokens(text: Optional[str]) -> List[str]:
+    if not text:
+        return []
+    cleaned = re.sub(r"[^a-zA-Z0-9ığüşöçİĞÜŞÖÇ]+", " ", text.lower())
+    return [token for token in cleaned.split() if len(token) > 2]
+
+def listing_text_tokens(listing: models.Listing) -> List[str]:
+    return normalize_tokens(" ".join([
+        listing.title or "",
+        listing.description or "",
+        listing.category or "",
+        listing.subcategory or "",
+        " ".join((listing.attributes or {}).values()) if isinstance(listing.attributes, dict) else "",
+    ]))
+
+def event_weight(event_type: str) -> float:
+    weights = {
+        "impression": 0.15,
+        "open": 1.2,
+        "favorite": 2.8,
+        "search": 1.0,
+        "category": 0.9,
+        "chat_start": 2.1,
+    }
+    return weights.get(event_type, 0.5)
+
+def build_feed_profile(events: List[models.FeedEvent], listings_by_id: dict) -> dict:
+    category_scores = Counter()
+    query_tokens = Counter()
+    price_total = 0.0
+    price_weight = 0.0
+    author_scores = Counter()
+    recent_terms = Counter()
+
+    for event in events:
+        weight = event_weight(event.event_type)
+        if event.category:
+          category_scores[event.category.lower()] += weight
+        if event.query:
+          for token in normalize_tokens(event.query):
+              query_tokens[token] += weight
+              recent_terms[token] += weight
+        if event.listing_id and event.listing_id in listings_by_id:
+          listing = listings_by_id[event.listing_id]
+          if listing.category:
+              category_scores[listing.category.lower()] += weight
+          if listing.author_id:
+              author_scores[listing.author_id] += weight
+          if listing.selected_price:
+              price_total += float(listing.selected_price) * weight
+              price_weight += weight
+          for token in listing_text_tokens(listing)[:14]:
+              recent_terms[token] += weight * 0.2
+
+    preferred_price = price_total / price_weight if price_weight else None
+    return {
+        "category_scores": category_scores,
+        "query_tokens": query_tokens,
+        "preferred_price": preferred_price,
+        "author_scores": author_scores,
+        "recent_terms": recent_terms,
+    }
+
+def score_listing(listing: models.Listing, profile: dict, search: Optional[str], category: Optional[str], global_popularity: Counter) -> tuple[float, List[str], Optional[str], str]:
+    score = 0.0
+    signals = []
+    badge = None
+    now = datetime.utcnow()
+    age_days = max((now - listing.created_at).total_seconds() / 86400.0, 0.0)
+
+    recency = 1.0 / (1.0 + age_days / 6.0)
+    score += recency * 2.5
+    if recency > 0.8:
+        signals.append("fresh")
+        badge = badge or "Fresh"
+
+    cat = (listing.category or "").lower()
+    cat_boost = profile["category_scores"].get(cat, 0.0)
+    if cat_boost:
+        score += cat_boost * 2.4
+        signals.append(f"likes {cat}")
+
+    if profile["preferred_price"]:
+      preferred = profile["preferred_price"]
+      price = float(listing.selected_price or 0)
+      if price > 0:
+        distance = abs(price - preferred) / max(preferred, 1)
+        proximity = math.exp(-distance * 1.8)
+        score += proximity * 2.1
+        if proximity > 0.6:
+          signals.append("right price band")
+
+    popularity = global_popularity.get(listing.id, 0)
+    if popularity:
+        score += math.log1p(popularity) * 0.7
+        signals.append("popular now")
+        badge = badge or "Trending"
+
+    if listing.author_id and profile["author_scores"].get(listing.author_id):
+        score += profile["author_scores"][listing.author_id] * 1.1
+        signals.append("seller you engaged with")
+
+    search_terms = normalize_tokens(search)
+    listing_tokens = listing_text_tokens(listing)
+    if search_terms:
+      overlap = sum(1 for token in search_terms if token in listing_tokens)
+      if overlap:
+          score += overlap * 1.6
+          signals.append("matches search")
+
+    if category and category != "all":
+      if cat == category.lower() or (listing.subcategory or "").lower() == category.lower():
+          score += 3.5
+          signals.append("active category")
+      else:
+          score -= 2.0
+
+    if listing.status == "draft":
+        score -= 3.0
+
+    if listing.author_id and profile.get("recent_author_id") == listing.author_id:
+        score += 0.8
+
+    if score < 0:
+      score = 0
+
+    if not badge and signals:
+      badge = "Because you like this"
+
+    reason = " · ".join(signals[:3]) if signals else "Fresh item from marketplace"
+    return score, signals[:4], badge, reason
+
+def build_feed_response(db: Session, current_user: Optional[models.User], category: Optional[str], search: Optional[str]):
+    query = db.query(models.Listing).filter(models.Listing.status == "active")
+    if category and category != "all":
+        query = query.filter((models.Listing.category == category) | (models.Listing.subcategory == category))
+    if search:
+        query = query.filter(
+            (models.Listing.title.ilike(f"%{search}%")) |
+            (models.Listing.description.ilike(f"%{search}%")) |
+            (models.Listing.category.ilike(f"%{search}%")) |
+            (models.Listing.subcategory.ilike(f"%{search}%"))
+        )
+
+    listings = query.order_by(desc(models.Listing.created_at)).all()
+    listings_by_id = {listing.id: listing for listing in listings}
+
+    events = []
+    if current_user:
+        events = db.query(models.FeedEvent).filter(models.FeedEvent.user_id == current_user.id).order_by(desc(models.FeedEvent.timestamp)).limit(400).all()
+
+    global_popularity = Counter()
+    for row in db.query(models.FeedEvent.listing_id, models.FeedEvent.event_type).filter(models.FeedEvent.listing_id.isnot(None)).all():
+        if row.listing_id:
+            global_popularity[row.listing_id] += 1 if row.event_type != "impression" else 0.3
+
+    profile = build_feed_profile(events, listings_by_id) if current_user else {
+        "category_scores": Counter(),
+        "query_tokens": Counter(),
+        "preferred_price": None,
+        "author_scores": Counter(),
+        "recent_terms": Counter(),
+    }
+
+    ranked = []
+    for listing in listings:
+        score, signals, badge, reason = score_listing(listing, profile, search, category, global_popularity)
+        ranked.append({
+            "listing": listing,
+            "score": round(score, 3),
+            "signals": signals,
+            "badge": badge,
+            "reason": reason,
+        })
+
+    ranked.sort(key=lambda item: (-item["score"], -item["listing"].created_at.timestamp(), item["listing"].id))
+
+    top_categories = []
+    for category_name, value in profile["category_scores"].most_common(4):
+        top_categories.append({"name": category_name, "score": round(float(value), 2)})
+
+    price_range = None
+    if profile["preferred_price"]:
+        preferred = profile["preferred_price"]
+        price_range = {
+            "min": round(preferred * 0.82),
+            "max": round(preferred * 1.18),
+        }
+
+    summary = "Showing fresh inventory first."
+    if current_user and top_categories:
+        summary = f"Learning from your recent activity: {top_categories[0]['name']} first."
+    elif current_user:
+        summary = "Mixing freshness, popularity, and current intent."
+
+    items = [
+        {
+            **schemas.ListingResponse.model_validate(item["listing"]).model_dump(),
+            "feed_score": item["score"],
+            "feed_reason": item["reason"],
+            "feed_badge": item["badge"],
+            "feed_signals": item["signals"],
+        }
+        for item in ranked
+    ]
+
+    return {
+        "items": items,
+        "insights": {
+            "top_categories": top_categories,
+            "preferred_price_range": price_range,
+            "summary": summary,
+        },
+    }
+
 def build_chat_assist(listing: models.Listing, messages: List[models.Message], current_user: models.User, other_user: models.User) -> dict:
     last_buyer_message = next(
         (
@@ -207,6 +435,22 @@ def build_chat_assist(listing: models.Listing, messages: List[models.Message], c
         "summary": summary,
         "suggestions": suggestions[:3],
     }
+
+def log_feed_event(db: Session, current_user: Optional[models.User], event: schemas.FeedEventCreate):
+    if not current_user:
+        return None
+
+    feed_event = models.FeedEvent(
+        user_id=current_user.id,
+        event_type=event.event_type,
+        listing_id=event.listing_id,
+        category=event.category,
+        query=event.query,
+        event_metadata=event.metadata,
+    )
+    db.add(feed_event)
+    db.commit()
+    return feed_event
 
 async def get_current_user(authorization: Optional[str] = Header(None), db: Session = Depends(get_db)):
     if not authorization or not authorization.startswith("Bearer "):
@@ -382,6 +626,28 @@ def get_listings(category: Optional[str] = None, subcategory: Optional[str] = No
         
     return query.order_by(desc(models.Listing.created_at)).all()
 
+@app.get("/api/feed", response_model=schemas.FeedResponse)
+def get_feed(
+    category: Optional[str] = None,
+    search: Optional[str] = None,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    current_user = get_optional_user(authorization, db)
+    return build_feed_response(db, current_user, category, search)
+
+@app.post("/api/feed/events")
+def create_feed_event(
+    event: schemas.FeedEventCreate,
+    authorization: Optional[str] = Header(None),
+    db: Session = Depends(get_db),
+):
+    current_user = get_optional_user(authorization, db)
+    if not current_user:
+        return {"message": "ignored"}
+    feed_event = log_feed_event(db, current_user, event)
+    return {"message": "recorded", "id": feed_event.id if feed_event else None}
+
 @app.get("/api/listings/drafts", response_model=List[schemas.ListingResponse])
 def get_drafts(current_user: models.User = Depends(get_current_user), db: Session = Depends(get_db)):
     return db.query(models.Listing).filter(
@@ -543,7 +809,7 @@ async def analyze_image(
         status="queued",
         image_url=safe_name,
         image_name=original_name,
-        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash"),
+        model=os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite"),
     )
     db.add(job)
     db.commit()

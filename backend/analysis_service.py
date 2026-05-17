@@ -34,7 +34,7 @@ class ListingAnalysis(BaseModel):
     suggested_attributes: SuggestedAttributes = Field(default_factory=SuggestedAttributes)
 
 
-DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash")
+DEFAULT_MODEL = os.getenv("GEMINI_MODEL", "gemini-2.5-flash-lite")
 
 
 def _pricing_profile(quick_price: int, market_price: int, confidence: float) -> dict:
