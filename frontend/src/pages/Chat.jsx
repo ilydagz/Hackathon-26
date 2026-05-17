@@ -54,54 +54,76 @@ const Chat = () => {
     fetchChats();
   }, []);
 
+  // Effect 1: Poll for messages every 3 seconds
   useEffect(() => {
-    if (activeChat) {
-      let cancelled = false;
-      const loadChat = async () => {
-        setAssistLoading(true);
-        setAssistError('');
-        try {
-          const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
-          const messageData = await api.getMessages(activeChat.listing_id, otherUserId);
-          if (!cancelled) {
-            setMessages(messageData);
-          }
-        } catch (err) {
-          console.error(err);
-        }
+    if (!activeChat) return;
 
-        try {
-          const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
-          const assistData = await api.getChatAssist(activeChat.listing_id, otherUserId);
-          if (!cancelled) {
-            setAssist(assistData);
-          }
-        } catch (err) {
-          console.error(err);
-          if (!cancelled) {
-            setAssist(null);
-            setAssistError(err?.response?.data?.detail || err.message || 'Chat Copilot is unavailable right now.');
-          }
+    let cancelled = false;
+    const fetchMessages = async () => {
+      try {
+        const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
+        const messageData = await api.getMessages(activeChat.listing_id, otherUserId);
+        if (!cancelled) {
+          // Only update state if message length or the last message has actually changed to avoid unnecessary renders
+          setMessages(prev => {
+            if (prev.length === messageData.length && prev[prev.length - 1]?.id === messageData[messageData.length - 1]?.id) {
+              return prev;
+            }
+            return messageData;
+          });
         }
+      } catch (err) {
+        console.error("Failed to fetch messages:", err);
+      }
+    };
 
+    void fetchMessages();
+    const interval = setInterval(fetchMessages, 3000);
+
+    return () => {
+      cancelled = true;
+      clearInterval(interval);
+    };
+  }, [activeChat, currentUserId]);
+
+  // Effect 2: Load chat assist ONLY when active chat or message content actually changes
+  useEffect(() => {
+    if (!activeChat) return;
+
+    let cancelled = false;
+    const fetchAssist = async () => {
+      setAssistLoading(true);
+      setAssistError('');
+      try {
+        const otherUserId = Number(activeChat.sender_id) === currentUserId ? activeChat.receiver_id : activeChat.sender_id;
+        const assistData = await api.getChatAssist(activeChat.listing_id, otherUserId);
+        if (!cancelled) {
+          setAssist(assistData);
+        }
+      } catch (err) {
+        console.error("Failed to fetch chat assist:", err);
+        if (!cancelled) {
+          setAssist(null);
+          setAssistError(err?.response?.data?.detail || err.message || 'Chat Copilot is unavailable right now.');
+        }
+      } finally {
         if (!cancelled) {
           setAssistLoading(false);
         }
-      };
+      }
+    };
 
-      const timer = setTimeout(() => {
-        void loadChat();
-      }, 0);
-      const interval = setInterval(() => {
-        void loadChat();
-      }, 3000);
-      return () => {
-        cancelled = true;
-        clearTimeout(timer);
-        clearInterval(interval);
-      };
-    }
-  }, [activeChat, currentUserId]);
+    void fetchAssist();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [
+    activeChat?.id,
+    messages.length,
+    messages.length > 0 ? messages[messages.length - 1]?.id : null,
+    currentUserId
+  ]);
 
   useEffect(() => {
     if (scrollRef.current) {
