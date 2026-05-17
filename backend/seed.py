@@ -1,6 +1,11 @@
 import random
 from collections import defaultdict
 from datetime import datetime, timedelta
+from pathlib import Path
+import math
+import textwrap
+
+from PIL import Image, ImageDraw, ImageFont
 
 from database import SessionLocal, engine, Base
 import models
@@ -8,6 +13,8 @@ from main import hash_password
 
 RNG = random.Random(26)
 TOTAL_LISTINGS = 100
+STATIC_IMAGE_DIR = Path(__file__).resolve().parent / "static" / "images" / "seeded"
+STATIC_IMAGE_DIR.mkdir(parents=True, exist_ok=True)
 
 
 def weighted_choice(rng, items):
@@ -380,6 +387,287 @@ def build_description(condition, brand, item, extra, accessories):
     prefix = condition_label(condition)
     tail = f"Includes {accessories}." if accessories else "Ready for pickup."
     return f"{prefix} {brand} {item}. {extra} {tail}"
+
+
+def clamp(value, low=0, high=255):
+    return max(low, min(high, int(value)))
+
+
+def adjust_color(color, amount):
+    return tuple(clamp(channel + amount) for channel in color)
+
+
+def hex_color(color):
+    return "#%02x%02x%02x" % color
+
+
+def item_key(listing):
+    return f"{listing['category']}|{listing['subcategory']}|{listing['title']}"
+
+
+def palette_for_listing(listing):
+    palettes = {
+        "electronics": ((23, 30, 46), (70, 118, 198), (198, 234, 255)),
+        "furniture": ((55, 40, 27), (170, 130, 92), (244, 225, 203)),
+        "clothing": ((38, 32, 46), (177, 93, 146), (252, 226, 235)),
+        "decor": ((50, 45, 37), (198, 143, 88), (255, 241, 214)),
+        "other": ((28, 41, 35), (104, 150, 118), (223, 242, 229)),
+    }
+    base, accent, light = palettes.get(listing["category"], palettes["other"])
+    sub_hash = sum(ord(ch) for ch in listing["subcategory"])
+    offset = (sub_hash % 24) - 12
+    return adjust_color(base, offset), adjust_color(accent, offset // 2), adjust_color(light, offset // 3)
+
+
+def font(size):
+    try:
+        return ImageFont.truetype("/System/Library/Fonts/Supplemental/Arial.ttf", size)
+    except Exception:
+        try:
+            return ImageFont.truetype("/System/Library/Fonts/Supplemental/Helvetica.ttf", size)
+        except Exception:
+            return ImageFont.load_default()
+
+
+def draw_soft_gradient(draw, size, top_color, bottom_color):
+    width, height = size
+    for y in range(height):
+        ratio = y / max(height - 1, 1)
+        color = tuple(
+            int(top_color[i] * (1 - ratio) + bottom_color[i] * ratio)
+            for i in range(3)
+        )
+        draw.line((0, y, width, y), fill=color)
+
+
+def draw_phone(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle(box, radius=32, fill=adjust_color(light, -25), outline=accent, width=8)
+    screen = (x1 + 36, y1 + 36, x2 - 36, y2 - 42)
+    draw.rounded_rectangle(screen, radius=24, fill=adjust_color(light, 18))
+    draw.ellipse((x1 + 72, y1 + 72, x1 + 104, y1 + 104), fill=accent)
+    draw.ellipse((x1 + 72, y1 + 118, x1 + 104, y1 + 150), fill=adjust_color(accent, -40))
+    draw.ellipse((x1 + 84, y2 - 104, x1 + 92, y2 - 96), fill=accent)
+    draw.line((x1 + 72, y1 + 42, x2 - 72, y1 + 42), fill=accent, width=6)
+
+
+def draw_laptop(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1, y1 + 20, x2, y2 - 50), radius=24, fill=adjust_color(light, -10), outline=accent, width=8)
+    draw.rectangle((x1 - 20, y2 - 40, x2 + 20, y2 - 20), fill=adjust_color(accent, -20))
+    draw.rectangle((x1 + 34, y1 + 58, x2 - 34, y2 - 92), fill=adjust_color(light, 28))
+    draw.line((x1 + 52, y2 - 28, x2 - 52, y2 - 28), fill=adjust_color(light, 60), width=4)
+
+
+def draw_chair(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 68, y1 + 34, x2 - 48, y1 + 150), radius=20, fill=adjust_color(light, -10), outline=accent, width=8)
+    draw.rounded_rectangle((x1 + 92, y1 + 128, x1 + 240, y1 + 220), radius=18, fill=adjust_color(light, 10), outline=accent, width=8)
+    draw.line((x1 + 120, y1 + 220, x1 + 92, y2 - 48), fill=accent, width=10)
+    draw.line((x1 + 212, y1 + 220, x1 + 244, y2 - 48), fill=accent, width=10)
+    draw.line((x1 + 132, y1 + 128, x1 + 96, y2 - 36), fill=adjust_color(accent, -20), width=8)
+    draw.line((x1 + 248, y1 + 128, x1 + 284, y2 - 36), fill=adjust_color(accent, -20), width=8)
+
+
+def draw_sofa(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 44, y1 + 86, x2 - 44, y1 + 206), radius=28, fill=adjust_color(light, -6), outline=accent, width=8)
+    draw.rounded_rectangle((x1 + 18, y1 + 122, x1 + 84, y1 + 220), radius=24, fill=adjust_color(light, -16), outline=accent, width=8)
+    draw.rounded_rectangle((x2 - 84, y1 + 122, x2 - 18, y1 + 220), radius=24, fill=adjust_color(light, -16), outline=accent, width=8)
+    draw.rectangle((x1 + 56, y1 + 206, x2 - 56, y1 + 252), fill=adjust_color(accent, -30))
+    draw.rectangle((x1 + 72, y1 + 252, x1 + 104, y2 - 24), fill=accent)
+    draw.rectangle((x2 - 104, y1 + 252, x2 - 72, y2 - 24), fill=accent)
+
+
+def draw_bed(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 22, y1 + 112, x2 - 22, y1 + 206), radius=18, fill=adjust_color(light, -8), outline=accent, width=8)
+    draw.rectangle((x1 + 38, y1 + 56, x1 + 126, y1 + 176), fill=adjust_color(accent, -12))
+    draw.rectangle((x1 + 126, y1 + 82, x2 - 54, y1 + 126), fill=adjust_color(light, 18))
+    draw.rectangle((x1 + 126, y1 + 126, x2 - 54, y1 + 168), fill=adjust_color(light, 6))
+    draw.rectangle((x1 + 56, y1 + 206, x1 + 76, y2 - 28), fill=accent)
+    draw.rectangle((x2 - 76, y1 + 206, x2 - 56, y2 - 28), fill=accent)
+
+
+def draw_shelf(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 58, y1 + 44, x2 - 58, y2 - 30), radius=18, fill=adjust_color(light, -4), outline=accent, width=8)
+    for y in [96, 158, 220]:
+        draw.line((x1 + 76, y1 + y, x2 - 76, y1 + y), fill=accent, width=8)
+    for x in [132, 212, 292]:
+        draw.line((x1 + x, y1 + 56, x1 + x, y2 - 42), fill=adjust_color(accent, -24), width=8)
+
+
+def draw_shirt(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    points = [(x1 + 110, y1 + 42), (x1 + 176, y1 + 42), (x1 + 212, y1 + 86), (x1 + 248, y1 + 64), (x1 + 286, y1 + 128), (x1 + 242, y1 + 154), (x1 + 242, y2 - 36), (x1 + 44, y2 - 36), (x1 + 44, y1 + 154), (x1 + 0, y1 + 128), (x1 + 38, y1 + 64), (x1 + 74, y1 + 86)]
+    draw.polygon(points, fill=adjust_color(light, -10), outline=accent)
+    draw.line((x1 + 120, y1 + 94, x1 + 152, y1 + 126), fill=accent, width=6)
+    draw.line((x1 + 164, y1 + 94, x1 + 132, y1 + 126), fill=accent, width=6)
+
+
+def draw_pants(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.polygon([(x1 + 92, y1 + 52), (x1 + 232, y1 + 52), (x1 + 246, y1 + 134), (x1 + 196, y2 - 40), (x1 + 150, y1 + 184), (x1 + 104, y2 - 40), (x1 + 54, y1 + 134)], fill=adjust_color(light, -8), outline=accent)
+    draw.line((x1 + 162, y1 + 52, x1 + 160, y2 - 40), fill=accent, width=6)
+
+
+def draw_shoes(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 42, y1 + 150, x1 + 184, y1 + 200), radius=18, fill=adjust_color(light, -12), outline=accent, width=7)
+    draw.rounded_rectangle((x1 + 158, y1 + 112, x2 - 40, y1 + 166), radius=18, fill=adjust_color(light, 6), outline=accent, width=7)
+    draw.line((x1 + 94, y1 + 150, x1 + 116, y1 + 116), fill=accent, width=6)
+    draw.line((x1 + 200, y1 + 112, x1 + 220, y1 + 80), fill=accent, width=6)
+
+
+def draw_accessories(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 88, y1 + 60, x1 + 228, y1 + 214), radius=36, fill=adjust_color(light, -14), outline=accent, width=8)
+    draw.ellipse((x1 + 122, y1 + 94, x1 + 194, y1 + 166), outline=accent, width=8)
+    draw.line((x1 + 88, y1 + 108, x1 + 62, y2 - 36), fill=accent, width=7)
+
+
+def draw_lamp(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.line((x1 + 168, y1 + 46, x1 + 168, y1 + 190), fill=accent, width=10)
+    draw.polygon([(x1 + 98, y1 + 70), (x1 + 238, y1 + 70), (x1 + 200, y1 + 130), (x1 + 136, y1 + 130)], fill=adjust_color(light, -16), outline=accent)
+    draw.rectangle((x1 + 112, y1 + 190, x1 + 224, y1 + 216), fill=adjust_color(accent, -10))
+    draw.ellipse((x1 + 118, y1 + 20, x1 + 142, y1 + 44), fill=adjust_color(light, 30))
+
+
+def draw_wall_art(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 54, y1 + 44, x2 - 54, y2 - 36), radius=20, fill=adjust_color(light, -8), outline=accent, width=8)
+    draw.polygon([(x1 + 82, y1 + 182), (x1 + 132, y1 + 104), (x1 + 194, y1 + 176), (x1 + 246, y1 + 122), (x1 + 286, y1 + 196)], fill=adjust_color(accent, -24))
+    draw.ellipse((x1 + 106, y1 + 74, x1 + 150, y1 + 118), fill=adjust_color(light, 32))
+
+
+def draw_rug(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.rounded_rectangle((x1 + 50, y1 + 74, x2 - 50, y2 - 74), radius=42, fill=adjust_color(light, -10), outline=accent, width=8)
+    draw.rounded_rectangle((x1 + 82, y1 + 106, x2 - 82, y2 - 106), radius=30, fill=adjust_color(light, 4), outline=adjust_color(accent, -24), width=5)
+    draw.line((x1 + 110, y1 + 92, x1 + 110, y2 - 92), fill=accent, width=4)
+    draw.line((x2 - 110, y1 + 92, x2 - 110, y2 - 92), fill=accent, width=4)
+
+
+def draw_vase(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.ellipse((x1 + 114, y1 + 28, x1 + 170, y1 + 74), fill=adjust_color(light, 12), outline=accent, width=6)
+    draw.polygon([(x1 + 92, y1 + 72), (x1 + 192, y1 + 72), (x1 + 212, y1 + 156), (x1 + 168, y2 - 42), (x1 + 116, y2 - 42), (x1 + 72, y1 + 156)], fill=adjust_color(light, -12), outline=accent)
+    draw.line((x1 + 124, y1 + 74, x1 + 136, y2 - 58), fill=adjust_color(accent, -32), width=6)
+    draw.line((x1 + 160, y1 + 74, x1 + 148, y2 - 58), fill=adjust_color(accent, -32), width=6)
+
+
+def draw_books(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    for i, offset in enumerate([0, 26, 52]):
+        draw.rounded_rectangle((x1 + 58 + offset, y1 + 86 - i * 10, x2 - 58, y1 + 136 - i * 10), radius=16, fill=adjust_color(light, -10 + i * 6), outline=accent, width=6)
+    draw.line((x1 + 82, y1 + 84, x1 + 286, y1 + 84), fill=adjust_color(accent, -10), width=4)
+
+
+def draw_bike(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    for cx, cy in [(x1 + 92, y1 + 188), (x1 + 244, y1 + 188)]:
+        draw.ellipse((cx - 54, cy - 54, cx + 54, cy + 54), outline=accent, width=8)
+    draw.line((x1 + 92, y1 + 188, x1 + 166, y1 + 126), fill=adjust_color(light, -20), width=8)
+    draw.line((x1 + 166, y1 + 126, x1 + 244, y1 + 188), fill=adjust_color(light, -20), width=8)
+    draw.line((x1 + 166, y1 + 126, x1 + 206, y1 + 96), fill=adjust_color(light, -20), width=8)
+    draw.line((x1 + 206, y1 + 96, x1 + 248, y1 + 96), fill=accent, width=8)
+    draw.line((x1 + 166, y1 + 126, x1 + 140, y1 + 94), fill=accent, width=8)
+    draw.ellipse((x1 + 140, y1 + 88, x1 + 162, y1 + 110), fill=accent)
+
+
+def draw_box(draw, box, accent, light):
+    x1, y1, x2, y2 = box
+    draw.polygon([(x1 + 84, y1 + 88), (x1 + 188, y1 + 52), (x2 - 80, y1 + 88), (x2 - 126, y2 - 60), (x1 + 128, y2 - 18), (x1 + 62, y2 - 60)], fill=adjust_color(light, -8), outline=accent)
+    draw.line((x1 + 188, y1 + 52, x1 + 188, y2 - 20), fill=accent, width=6)
+    draw.line((x1 + 84, y1 + 88, x1 + 188, y1 + 124), fill=adjust_color(accent, -16), width=6)
+
+
+ICON_DRAWERS = {
+    "phones": draw_phone,
+    "laptops": draw_laptop,
+    "audio": draw_accessories,
+    "cameras": draw_box,
+    "gaming": draw_box,
+    "tables": draw_box,
+    "chairs": draw_chair,
+    "sofas": draw_sofa,
+    "beds": draw_bed,
+    "storage": draw_shelf,
+    "dress": draw_shirt,
+    "pants": draw_pants,
+    "shirts": draw_shirt,
+    "shoes": draw_shoes,
+    "accessories": draw_accessories,
+    "lighting": draw_lamp,
+    "wall_art": draw_wall_art,
+    "rugs": draw_rug,
+    "vases": draw_vase,
+    "books": draw_books,
+    "sports": draw_bike,
+    "toys": draw_box,
+}
+
+
+def render_listing_image(listing, index):
+    file_name = f"{index:03d}-{listing['category']}-{listing['subcategory']}-{slugify(listing['title'])}.png"
+    output_path = STATIC_IMAGE_DIR / file_name
+
+    width, height = 1200, 900
+    base, accent, light = palette_for_listing(listing)
+    img = Image.new("RGB", (width, height), base)
+    draw = ImageDraw.Draw(img)
+    draw_soft_gradient(draw, (width, height), adjust_color(base, 18), adjust_color(light, -12))
+
+    for i in range(8):
+        alpha_color = adjust_color(accent, -10 + i * 4)
+        x = 60 + i * 130 + (index * 17) % 60
+        y = 60 + (i * 43 + index * 11) % 140
+        draw.ellipse((x, y, x + 140, y + 140), outline=alpha_color, width=8)
+
+    icon_draw = ICON_DRAWERS.get(listing["subcategory"], draw_box)
+    box = (320, 150, 880, 720)
+    icon_draw(draw, box, accent, light)
+
+    overlay = Image.new("RGBA", (width, height), (0, 0, 0, 0))
+    overlay_draw = ImageDraw.Draw(overlay)
+    overlay_draw.rounded_rectangle((60, 60, 1140, 840), radius=48, outline=adjust_color(light, -25), width=6)
+    overlay_draw.rectangle((60, 670, 1140, 840), fill=(0, 0, 0, 68))
+    img = Image.alpha_composite(img.convert("RGBA"), overlay)
+    draw = ImageDraw.Draw(img)
+
+    brand = listing["attributes"].get("brand") if isinstance(listing["attributes"], dict) else None
+    title_text = listing["title"]
+    subtitle_text = f"{listing['category'].title()} · {listing['subcategory'].replace('_', ' ').title()}"
+    if brand:
+        subtitle_text = f"{brand} · {subtitle_text}"
+
+    panel = (90, 702, 1110, 818)
+    draw.rounded_rectangle(panel, radius=30, fill=(14, 18, 26, 190), outline=(255, 255, 255, 38), width=2)
+    draw.text((122, 736), textwrap.shorten(title_text, width=34, placeholder="…"), font=font(34), fill=(255, 255, 255))
+    draw.text((122, 786), textwrap.shorten(subtitle_text, width=54, placeholder="…"), font=font(22), fill=(210, 220, 235))
+    price_text = f"TRY {int(round(listing['selected_price'])):,}"
+    draw.rounded_rectangle((884, 732, 1086, 804), radius=22, fill=adjust_color(accent, -8))
+    draw.text((986, 768), price_text, font=font(34), fill=(255, 255, 255), anchor="mm")
+
+    img = img.convert("RGB")
+    img.save(output_path, format="PNG", optimize=True)
+    return f"seeded/{file_name}"
+
+
+def slugify(text):
+    slug = []
+    last_dash = False
+    for ch in text.lower():
+        if ch.isalnum():
+            slug.append(ch)
+            last_dash = False
+        elif not last_dash:
+            slug.append("-")
+            last_dash = True
+    result = "".join(slug).strip("-")
+    return result[:70] or "item"
 
 
 def make_phone_listing(rng):
@@ -855,6 +1143,7 @@ def build_listings(db, users):
         for _ in range(count):
             listing_data = build_catalog_listing(RNG, category, subcategory)
             listing_data["author_id"] = RNG.choice(author_pools[category]).id
+            listing_data["image_url"] = render_listing_image(listing_data, len(created) + 1)
             listing = models.Listing(**listing_data)
             listing.created_at = datetime.now() - random_age(RNG, listing.status)
             db.add(listing)
