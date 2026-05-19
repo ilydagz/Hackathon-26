@@ -18,7 +18,6 @@ const Feed = () => {
   const [isDetailOpen, setIsDetailOpen] = useState(false);
   const [isFilterOpen, setIsFilterOpen] = useState(false);
   const [favorites, setFavorites] = useState(new Set());
-  const [feedInsights, setFeedInsights] = useState(null);
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState('');
   const searchTimerRef = useRef(null);
@@ -55,7 +54,6 @@ const Feed = () => {
         const data = await api.getFeed(selectedCategory, search);
         const items = Array.isArray(data.items) ? data.items : [];
         setListings(items);
-        setFeedInsights(data.insights || null);
 
         const freshIds = items.slice(0, 8)
           .map(item => item.id)
@@ -73,8 +71,7 @@ const Feed = () => {
       } catch (error) {
         console.error('Error fetching feed:', error);
         setListings([]);
-        setFeedInsights(null);
-        setError(error?.response?.data?.detail || error.message || 'FeedScout is unavailable right now.');
+        setError(error?.response?.data?.detail || error.message || 'Feed unavailable right now.');
       } finally {
         setLoading(false);
       }
@@ -150,17 +147,6 @@ const Feed = () => {
     });
   };
 
-  const forYouListings = listings.slice(0, 5);
-  const remainingListings = listings.slice(5);
-  const rankedListings = remainingListings.length > 0 ? remainingListings : listings.slice(5);
-  const topCategory = feedInsights?.top_categories?.[0];
-  const priceRange = feedInsights?.preferred_price_range;
-  const feedErrorTitle = /429|rate limit/i.test(error)
-    ? 'FeedScout is rate-limited'
-    : /500|internal error/i.test(error)
-      ? 'FeedScout hit internal error'
-      : 'FeedScout unavailable right now';
-
   const renderFeedCard = (listing, index, compact = false) => (
     <motion.div
       key={listing.id}
@@ -184,11 +170,6 @@ const Feed = () => {
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />
         <div className="absolute top-sm left-sm flex flex-col gap-1">
-          {listing.feed_badge && (
-            <span className="bg-primary text-on-primary text-[10px] font-black uppercase tracking-[0.18em] px-2 py-1 rounded-full shadow-sm">
-              {listing.feed_badge}
-            </span>
-          )}
           {favorites.has(Number(listing.id)) && (
             <span className="bg-white/85 text-primary text-[10px] font-black uppercase tracking-[0.18em] px-2 py-1 rounded-full shadow-sm">
               {t('nav.favorites') || 'Saved'}
@@ -213,15 +194,12 @@ const Feed = () => {
             <div className={`${compact ? 'font-headline-md text-display-sm-mobile' : 'font-headline-md text-headline-md'} text-on-background`}>
               ₺{listing.selected_price}
             </div>
-            <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70 shrink-0">
-              {Math.round((listing.feed_score || 0) * 10) / 10}
-            </span>
           </div>
           <h3 className={`font-title-card text-on-surface-variant mb-2 ${compact ? 'text-sm leading-snug line-clamp-2' : 'text-title-card truncate'}`}>
             {listing.title}
           </h3>
           <p className={`text-text-secondary leading-relaxed ${compact ? 'text-xs line-clamp-3' : 'text-xs line-clamp-2 mb-2'}`}>
-            {listing.feed_reason || listing.description || 'Quality product from a verified seller.'}
+            {listing.description || 'Quality product from a verified seller.'}
           </p>
           {compact && topCategory && (
             <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">
@@ -283,21 +261,11 @@ const Feed = () => {
           <span className="material-symbols-outlined text-primary">psychology</span>
           <div className="min-w-0">
             <p className="font-label-caps text-label-caps text-primary/80 uppercase tracking-wider">
-              {t('feed.forYou') || 'For you'}
+              {t('feed.latest') || 'Latest'}
             </p>
-            <motion.p
-              key={feedInsights?.summary || 'default'}
-              initial={{ opacity: 0, y: 5 }}
-              animate={{ opacity: 1, y: 0 }}
-              className="font-body-sm text-body-sm font-bold text-on-background truncate max-w-[220px]"
-            >
-              {feedInsights?.summary || 'Fresh items first, then what you actually engage with.'}
-            </motion.p>
-            {priceRange && (
-              <p className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70 mt-1">
-                ₺{priceRange.min} - ₺{priceRange.max}
-              </p>
-            )}
+            <p className="font-body-sm text-body-sm font-bold text-on-background truncate max-w-[220px]">
+              Fresh items first, plain chronological feed.
+            </p>
           </div>
         </div>
       </div>
@@ -317,28 +285,9 @@ const Feed = () => {
         ))}
       </div>
 
-      {forYouListings.length > 0 && (
-        <section className="mb-xl">
-          <div className="flex items-center justify-between gap-3 mb-4">
-            <div>
-              <p className="font-label-caps text-label-caps text-primary/80 uppercase tracking-widest">{t('feed.forYou') || 'For you'}</p>
-              <h2 className="font-headline-md text-headline-md text-on-background">{t('feed.relevantFirst') || 'Most relevant first'}</h2>
-            </div>
-            {topCategory && (
-              <span className="text-[10px] font-black uppercase tracking-[0.18em] text-primary/70 bg-primary/10 px-3 py-2 rounded-full">
-                {topCategory.name}
-              </span>
-            )}
-          </div>
-          <div className="grid grid-flow-col auto-cols-max gap-4 overflow-x-auto pb-2 no-scrollbar snap-x snap-mandatory">
-            {forYouListings.map((listing, index) => renderFeedCard(listing, index, true))}
-          </div>
-        </section>
-      )}
-
       {error && !loading && (
         <div className="mb-xl rounded-2xl border border-amber-300 bg-amber-50 px-5 py-4 text-amber-900">
-          <p className="font-title-card text-title-card">{feedErrorTitle}</p>
+          <p className="font-title-card text-title-card">Feed unavailable right now</p>
           <p className="mt-1 text-sm">{error}</p>
           <button
             type="button"
@@ -361,8 +310,8 @@ const Feed = () => {
         </div>
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md md:gap-lg' : 'flex flex-col gap-md'}>
-          {Array.isArray(rankedListings) && rankedListings.map((listing, index) => renderFeedCard(listing, index + 5))}
-          {rankedListings.length === 0 && (
+          {Array.isArray(listings) && listings.map((listing, index) => renderFeedCard(listing, index))}
+          {listings.length === 0 && (
             <div className="col-span-full text-center py-xl bg-surface-card rounded-xl border border-dashed border-border-subtle flex flex-col items-center">
               <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-md text-text-secondary">
                 <span className="material-symbols-outlined text-3xl">search_off</span>

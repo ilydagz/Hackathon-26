@@ -486,136 +486,7 @@ def score_listing(listing: models.Listing, profile: dict, search: Optional[str],
     reason = " · ".join(signals[:3]) if signals else "Fresh item from marketplace"
     return score, signals[:4], badge, reason
 
-def build_feed_response(db: Session, current_user: Optional[models.User], category: Optional[str], search: Optional[str]):
-    category = normalize_category_filter(category)
-    query = db.query(models.Listing).filter(models.Listing.status == "active")
-    if category and category != "all":
-        query = query.filter((models.Listing.category == category) | (models.Listing.subcategory == category))
-    if search:
-        query = query.filter(
-            (models.Listing.title.ilike(f"%{search}%")) |
-            (models.Listing.description.ilike(f"%{search}%")) |
-            (models.Listing.category.ilike(f"%{search}%")) |
-            (models.Listing.subcategory.ilike(f"%{search}%"))
-        )
-
-    listings = query.order_by(desc(models.Listing.created_at)).limit(80).all()
-    if not listings:
-        return {
-            "items": [],
-            "insights": {
-                "top_categories": [],
-                "preferred_price_range": None,
-                "summary": "No live listings available right now.",
-            },
-        }
-
-    recent_events = []
-    if current_user:
-        recent_events = db.query(models.FeedEvent).filter(
-            models.FeedEvent.user_id == current_user.id
-        ).order_by(desc(models.FeedEvent.timestamp)).limit(40).all()
-
-    payload = {
-        "context": {
-            "category": category,
-            "search": search,
-            "current_user": {
-                "id": current_user.id if current_user else None,
-                "name": current_user.name if current_user else None,
-                "location": current_user.location if current_user else None,
-            },
-            "recent_events": [
-                {
-                    "event_type": event.event_type,
-                    "listing_id": event.listing_id,
-                    "category": event.category,
-                    "query": event.query,
-                    "timestamp": event.timestamp.isoformat() if event.timestamp else None,
-                }
-                for event in recent_events
-            ],
-        },
-        "listings": [
-            {
-                "id": listing.id,
-                "title": listing.title,
-                "description": (listing.description or "")[:220],
-                "selected_price": float(listing.selected_price or 0),
-                "category": listing.category,
-                "subcategory": listing.subcategory,
-                "condition": listing.condition,
-                "created_at": listing.created_at.isoformat() if listing.created_at else None,
-                "author_id": listing.author_id,
-                "author_name": listing.author.name if listing.author else None,
-                "price_strategy": listing.price_strategy,
-                "price_floor": listing.price_floor,
-                "price_ceiling": listing.price_ceiling,
-            }
-            for listing in listings
-        ],
-    }
-
-    # Only call AI for relevance if we actually have enough user events to personalize against.
-    # Otherwise, skip to save Gemini API quotas and speed up feed load!
-    if recent_events and len(recent_events) > 0:
-        try:
-            api_key = get_gemini_api_key()
-            prompt = (
-                "You are a marketplace personalization agent.\n"
-                "Analyze the 'context' containing the user's recent clicks, searches, and favorite categories.\n"
-                "Then, evaluate each listing in 'listings'. Return a JSON object with 'scored_items' array (each object having 'id' (int), 'feed_score' (float 0-10), 'feed_reason' (string), 'feed_badge' (optional string)) and an 'insights' object (with 'summary' and 'top_categories').\n"
-                "Rank items that match the user's recent events or location higher. Unrelated items get a score < 5.\n"
-                "Return JSON matching exactly this payload structure."
-            )
-            
-            req_payload = {
-                "contents": [
-                    {"role": "user", "parts": [{"text": prompt + "\n\nPayload:\n" + json.dumps(payload)}]}
-                ],
-                "generationConfig": {"response_mime_type": "application/json", "temperature": 0.2}
-            }
-            
-            req = urllib.request.Request(
-                f"{GEMINI_API_URL}/{GEMINI_MODEL}:generateContent?key={api_key}",
-                data=json.dumps(req_payload).encode("utf-8"),
-                headers={"Content-Type": "application/json"},
-                method="POST"
-            )
-            with urllib.request.urlopen(req, timeout=8) as response:
-                body = response.read().decode("utf-8")
-                data = json.loads(body)
-                ai_text = extract_gemini_text(data)
-                ai_data = json.loads(ai_text)
-                
-                scores_map = {item["id"]: item for item in ai_data.get("scored_items", [])}
-                items = []
-                for listing in listings:
-                    listing_payload = schemas.ListingResponse.model_validate(listing).model_dump()
-                    score_info = scores_map.get(listing.id, {})
-                    items.append({
-                        **listing_payload,
-                        "feed_score": float(score_info.get("feed_score", 5.0)),
-                        "feed_reason": score_info.get("feed_reason", "Fresh from marketplace"),
-                        "feed_badge": score_info.get("feed_badge", None),
-                        "feed_signals": [],
-                    })
-                    
-                # We purposefully DO NOT sort by feed_score here to keep the feed "normally displayed" 
-                # (chronological) while allowing the UI to use the AI badges for highlighting relevance.
-                return {
-                    "items": items,
-                    "insights": ai_data.get("insights", {
-                        "top_categories": [],
-                        "preferred_price_range": None,
-                        "summary": "Showing personalized items.",
-                    })
-                }
-        except Exception as e:
-            print(f"Personalization error: {e}")
-            pass # Fallthrough to standard chronological feed
-
-    # Fallback / Default: Standard chronological feed
+def build_chronological_feed_response(listings: List[models.Listing]) -> dict:
     items = []
     for idx, listing in enumerate(listings):
         listing_payload = schemas.ListingResponse.model_validate(listing).model_dump()
@@ -635,6 +506,25 @@ def build_feed_response(db: Session, current_user: Optional[models.User], catego
             "summary": "Showing latest items from the marketplace.",
         },
     }
+
+def build_feed_response(db: Session, current_user: Optional[models.User], category: Optional[str], search: Optional[str]):
+    category = normalize_category_filter(category)
+    query = db.query(models.Listing).filter(models.Listing.status == "active")
+    if category and category != "all":
+        query = query.filter((models.Listing.category == category) | (models.Listing.subcategory == category))
+    if search:
+        query = query.filter(
+            (models.Listing.title.ilike(f"%{search}%")) |
+            (models.Listing.description.ilike(f"%{search}%")) |
+            (models.Listing.category.ilike(f"%{search}%")) |
+            (models.Listing.subcategory.ilike(f"%{search}%"))
+        )
+
+    listings = query.order_by(desc(models.Listing.created_at)).limit(80).all()
+    if not listings:
+        return build_chronological_feed_response([])
+
+    return build_chronological_feed_response(listings)
 
 def build_chat_assist(listing: models.Listing, messages: List[models.Message], current_user: models.User, other_user: models.User) -> dict:
     payload = {
