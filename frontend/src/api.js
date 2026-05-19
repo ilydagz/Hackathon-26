@@ -1,4 +1,4 @@
-const API_URL = 'http://localhost:8000/api';
+import { buildApiUrl } from './utils/backendUrl';
 
 const getAuthHeaders = () => {
   const token = localStorage.getItem('token');
@@ -16,7 +16,7 @@ const getFormAuthHeaders = () => {
 export const api = {
   // Auth
   login: async (email, password) => {
-    const res = await fetch(`${API_URL}/auth/login`, {
+    const res = await fetch(buildApiUrl('auth/login'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email, password })
@@ -26,7 +26,7 @@ export const api = {
   },
   
   register: async (name, email, password) => {
-    const res = await fetch(`${API_URL}/auth/register`, {
+    const res = await fetch(buildApiUrl('auth/register'), {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ name, email, password })
@@ -37,7 +37,7 @@ export const api = {
 
   logout: async () => {
     try {
-      await fetch(`${API_URL}/auth/logout`, {
+      await fetch(buildApiUrl('auth/logout'), {
         method: 'POST',
         headers: getAuthHeaders()
       });
@@ -51,13 +51,13 @@ export const api = {
     const params = new URLSearchParams();
     if (category !== 'all') params.append('category', category);
     if (search) params.append('search', search);
-    const res = await fetch(`${API_URL}/listings?${params.toString()}`);
+    const res = await fetch(`${buildApiUrl('listings')}?${params.toString()}`);
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
 
   getDrafts: async () => {
-    const res = await fetch(`${API_URL}/listings/drafts`, {
+    const res = await fetch(buildApiUrl('listings/drafts'), {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -65,7 +65,7 @@ export const api = {
   },
 
   getAdminListings: async () => {
-    const res = await fetch(`${API_URL}/admin/listings`, {
+    const res = await fetch(buildApiUrl('admin/listings'), {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -73,7 +73,7 @@ export const api = {
   },
 
   createListing: async (listingData) => {
-    const res = await fetch(`${API_URL}/listings`, {
+    const res = await fetch(buildApiUrl('listings'), {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(listingData)
@@ -89,7 +89,7 @@ export const api = {
     const token = localStorage.getItem('token');
     const headers = token ? { 'Authorization': `Bearer ${token}` } : {};
 
-    const res = await fetch(`${API_URL}/analyze`, {
+    const res = await fetch(buildApiUrl('analyze'), {
       method: 'POST',
       headers,
       body: formData
@@ -99,13 +99,13 @@ export const api = {
   },
 
   getAnalysisJob: async (jobId) => {
-    const res = await fetch(`${API_URL}/analyze/jobs/${jobId}`);
+    const res = await fetch(buildApiUrl(`analyze/jobs/${jobId}`));
     if (!res.ok) throw new Error(await res.text());
     return res.json();
   },
 
   deleteListing: async (id) => {
-    const res = await fetch(`${API_URL}/listings/${id}`, {
+    const res = await fetch(buildApiUrl(`listings/${id}`), {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -114,7 +114,7 @@ export const api = {
   },
 
   updateListing: async (id, listingData) => {
-    const res = await fetch(`${API_URL}/listings/${id}`, {
+    const res = await fetch(buildApiUrl(`listings/${id}`), {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(listingData)
@@ -124,7 +124,7 @@ export const api = {
   },
 
   markAsSold: async (id) => {
-    const res = await fetch(`${API_URL}/listings/${id}/sold`, {
+    const res = await fetch(buildApiUrl(`listings/${id}/sold`), {
       method: 'POST',
       headers: getAuthHeaders()
     });
@@ -134,7 +134,7 @@ export const api = {
 
   // Users
   getMe: async () => {
-    const res = await fetch(`${API_URL}/users/me`, {
+    const res = await fetch(buildApiUrl('users/me'), {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -142,7 +142,7 @@ export const api = {
   },
 
   updateMe: async (userData) => {
-    const res = await fetch(`${API_URL}/users/me`, {
+    const res = await fetch(buildApiUrl('users/me'), {
       method: 'PUT',
       headers: getAuthHeaders(),
       body: JSON.stringify(userData)
@@ -154,7 +154,7 @@ export const api = {
   updateMeAvatar: async (file) => {
     const formData = new FormData();
     formData.append('file', file);
-    const res = await fetch(`${API_URL}/users/me/avatar`, {
+    const res = await fetch(buildApiUrl('users/me/avatar'), {
       method: 'POST',
       headers: getFormAuthHeaders(),
       body: formData
@@ -164,7 +164,7 @@ export const api = {
   },
 
   deleteMeAvatar: async () => {
-    const res = await fetch(`${API_URL}/users/me/avatar`, {
+    const res = await fetch(buildApiUrl('users/me/avatar'), {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -174,7 +174,7 @@ export const api = {
 
   // Users (Admin)
   getUsers: async () => {
-    const res = await fetch(`${API_URL}/users`, {
+    const res = await fetch(buildApiUrl('users'), {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -182,7 +182,7 @@ export const api = {
   },
 
   toggleUserStatus: async (id) => {
-    const res = await fetch(`${API_URL}/users/${id}/status`, {
+    const res = await fetch(buildApiUrl(`users/${id}/status`), {
       method: 'PUT',
       headers: getAuthHeaders()
     });
@@ -191,7 +191,7 @@ export const api = {
   },
 
   deleteUser: async (id) => {
-    const res = await fetch(`${API_URL}/users/${id}`, {
+    const res = await fetch(buildApiUrl(`users/${id}`), {
       method: 'DELETE',
       headers: getAuthHeaders()
     });
@@ -201,7 +201,7 @@ export const api = {
 
   // Logs (Admin)
   getLogs: async () => {
-    const res = await fetch(`${API_URL}/logs`, {
+    const res = await fetch(buildApiUrl('logs'), {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -210,7 +210,7 @@ export const api = {
 
   // Messages
   getChats: async () => {
-    const res = await fetch(`${API_URL}/chats`, {
+    const res = await fetch(buildApiUrl('chats'), {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -218,7 +218,7 @@ export const api = {
   },
 
   getMessages: async (listingId, otherUserId = null) => {
-    let url = `${API_URL}/messages/${listingId}`;
+    let url = buildApiUrl(`messages/${listingId}`);
     if (otherUserId) url += `?other_user_id=${otherUserId}`;
     const res = await fetch(url, {
       headers: getAuthHeaders()
@@ -228,7 +228,7 @@ export const api = {
   },
 
   sendMessage: async (messageData) => {
-    const res = await fetch(`${API_URL}/messages`, {
+    const res = await fetch(buildApiUrl('messages'), {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(messageData)
@@ -241,7 +241,7 @@ export const api = {
     const params = new URLSearchParams();
     if (category !== 'all') params.append('category', category);
     if (search) params.append('search', search);
-    const res = await fetch(`${API_URL}/feed?${params.toString()}`, {
+    const res = await fetch(`${buildApiUrl('feed')}?${params.toString()}`, {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());
@@ -249,7 +249,7 @@ export const api = {
   },
 
   recordFeedEvent: async (eventData) => {
-    const res = await fetch(`${API_URL}/feed/events`, {
+    const res = await fetch(buildApiUrl('feed/events'), {
       method: 'POST',
       headers: getAuthHeaders(),
       body: JSON.stringify(eventData)
@@ -260,7 +260,7 @@ export const api = {
 
   getChatAssist: async (listingId, otherUserId) => {
     const params = new URLSearchParams({ other_user_id: String(otherUserId) });
-    const res = await fetch(`${API_URL}/chats/${listingId}/assist?${params.toString()}`, {
+    const res = await fetch(`${buildApiUrl(`chats/${listingId}/assist`)}?${params.toString()}`, {
       headers: getAuthHeaders()
     });
     if (!res.ok) throw new Error(await res.text());

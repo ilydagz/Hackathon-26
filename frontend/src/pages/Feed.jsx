@@ -5,6 +5,7 @@ import { useLanguage } from '../context/LanguageContext';
 import ListingDetailModal from '../components/ListingDetailModal';
 import FilterMenu from '../components/FilterMenu';
 import { useSettings } from '../context/SettingsContext';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const Feed = () => {
   const { t } = useLanguage();
@@ -34,7 +35,7 @@ const Feed = () => {
 
   const getAvatarSrc = (avatarUrl) => {
     if (!avatarUrl) return '';
-    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+    return avatarUrl.startsWith('http') ? avatarUrl : buildStaticUrl(avatarUrl);
   };
 
   const fetchFavorites = async () => {
@@ -178,7 +179,7 @@ const Feed = () => {
     >
       <div className={`relative bg-surface-muted overflow-hidden shrink-0 ${compact ? 'w-full aspect-[4/3]' : viewMode === 'grid' ? 'aspect-square w-full' : 'w-40 md:w-48 h-full'}`}>
         <img
-          src={`http://localhost:8000/static/images/${listing.image_url}`}
+          src={buildStaticUrl(`images/${listing.image_url}`)}
           alt={listing.title}
           className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
         />

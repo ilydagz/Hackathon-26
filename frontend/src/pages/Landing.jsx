@@ -2,6 +2,7 @@ import React, { useEffect, useState } from 'react';
 import { Link } from 'react-router-dom';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../api';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const Landing = () => {
   const { t, lang, toggleLanguage } = useLanguage();
@@ -235,7 +236,7 @@ const Landing = () => {
                     <img 
                       alt={listing.title} 
                       className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
-                      src={`http://localhost:8000/static/images/${listing.image_url}`} 
+                      src={buildStaticUrl(`images/${listing.image_url}`)} 
                     />
                   </div>
                   <div className="p-sm md:p-md flex flex-col flex-grow">

@@ -7,6 +7,7 @@ import { useNotifications } from '../context/NotificationContext';
 import { api } from '../api';
 import LocationSelector from '../components/LocationSelector';
 import ConfirmModal from '../components/ConfirmModal';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const Profile = () => {
   const navigate = useNavigate();
@@ -37,7 +38,7 @@ const Profile = () => {
     if (userData.avatar_url) {
       return userData.avatar_url.startsWith('http')
         ? userData.avatar_url
-        : `http://localhost:8000/static/${userData.avatar_url}`;
+        : buildStaticUrl(userData.avatar_url);
     }
     return '';
   }, [avatarPreview, userData.avatar_url]);

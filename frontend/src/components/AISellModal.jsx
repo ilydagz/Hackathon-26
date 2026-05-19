@@ -2,6 +2,7 @@ import { useState, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useLanguage } from '../context/LanguageContext';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const PRICE_STRATEGIES = [
   {
@@ -359,12 +360,12 @@ const AISellModal = ({ isOpen, onClose, onPublished }) => {
                         setAttributes(draft.attributes || {});
                         setSelectedPrice(draft.price_strategy || 'balanced');
                         setCustomPrice('');
-                        setPreview(`http://localhost:8000/static/images/${draft.image_url}`);
+                        setPreview(buildStaticUrl(`images/${draft.image_url}`));
                         setStep(3);
                       }}
                     >
                       <div className="w-16 h-16 bg-surface-muted rounded-lg overflow-hidden flex-shrink-0 relative">
-                        <img src={`http://localhost:8000/static/images/${draft.image_url}`} className="w-full h-full object-cover" alt="Draft preview" />
+                        <img src={buildStaticUrl(`images/${draft.image_url}`)} className="w-full h-full object-cover" alt="Draft preview" />
                       </div>
                       <div className="flex-grow">
                         <h4 className="font-title-card text-title-card text-on-surface line-clamp-1">{draft.title}</h4>

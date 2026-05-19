@@ -6,6 +6,7 @@ import SettingsModal from './SettingsModal';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
 import { api } from '../api';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const Navbar = () => {
   const navigate = useNavigate();
@@ -22,7 +23,7 @@ const Navbar = () => {
   const [lastNotificationId, setLastNotificationId] = useState(0);
 
   const avatarSrc = user.avatar_url
-    ? (user.avatar_url.startsWith('http') ? user.avatar_url : `http://localhost:8000/static/${user.avatar_url}`)
+    ? (user.avatar_url.startsWith('http') ? user.avatar_url : buildStaticUrl(user.avatar_url))
     : '';
 
   useEffect(() => {

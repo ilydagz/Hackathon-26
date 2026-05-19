@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 import { api } from '../api';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const Chat = () => {
   const { t } = useLanguage();
@@ -23,7 +24,7 @@ const Chat = () => {
 
   const getAvatarSrc = (avatarUrl) => {
     if (!avatarUrl) return '';
-    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+    return avatarUrl.startsWith('http') ? avatarUrl : buildStaticUrl(avatarUrl);
   };
 
   const renderAvatar = (user) => {

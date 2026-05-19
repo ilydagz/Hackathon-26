@@ -3,6 +3,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { api } from '../api';
 import { useLanguage } from '../context/LanguageContext';
 import { useNotifications } from '../context/NotificationContext';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
   const { t } = useLanguage();
@@ -14,7 +15,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
 
   const getAvatarSrc = (avatarUrl) => {
     if (!avatarUrl) return '';
-    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+    return avatarUrl.startsWith('http') ? avatarUrl : buildStaticUrl(avatarUrl);
   };
 
   useEffect(() => {
@@ -137,7 +138,7 @@ const ListingDetailModal = ({ listing, isOpen, onClose, onAction }) => {
 
             <div className="w-full md:w-1/2 aspect-square md:aspect-auto bg-surface-muted shrink-0 md:h-auto h-[300px] relative">
               <img 
-                src={listing.image_url?.startsWith('http') ? listing.image_url : `http://localhost:8000/static/images/${listing.image_url || 'demo.jpg'}`} 
+                src={listing.image_url?.startsWith('http') ? listing.image_url : buildStaticUrl(`images/${listing.image_url || 'demo.jpg'}`)} 
                 alt={listing.title} 
                 className="w-full h-full object-cover"
               />

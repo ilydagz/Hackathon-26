@@ -1,7 +1,8 @@
 import axios from 'axios';
+import { BACKEND_ORIGIN } from '../utils/backendUrl';
 
 const api = axios.create({
-  baseURL: 'http://localhost:8000', // FastAPI server URL
+  baseURL: BACKEND_ORIGIN,
   headers: {
     'Content-Type': 'application/json',
   },

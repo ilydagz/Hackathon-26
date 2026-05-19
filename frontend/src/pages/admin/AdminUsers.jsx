@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { api } from '../../api';
 import { useNotifications } from '../../context/NotificationContext';
+import { buildStaticUrl } from '../../utils/backendUrl';
 
 const AdminUsers = () => {
   const [users, setUsers] = useState([]);
@@ -12,7 +13,7 @@ const AdminUsers = () => {
 
   const getAvatarSrc = (avatarUrl) => {
     if (!avatarUrl) return '';
-    return avatarUrl.startsWith('http') ? avatarUrl : `http://localhost:8000/static/${avatarUrl}`;
+    return avatarUrl.startsWith('http') ? avatarUrl : buildStaticUrl(avatarUrl);
   };
 
   const fetchUsers = async () => {

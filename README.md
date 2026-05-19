@@ -26,12 +26,20 @@ camera in, item draft out, price options ready, publish with one decision.
 
 ## Gemini Setup
 
-Set the backend env vars before starting the API:
+Set backend env vars before starting API:
 
 - `GOOGLE_API_KEY` or `GEMINI_API_KEY`
 - optional `GEMINI_MODEL=gemma-4-31b-it` and `GEMINI_FALLBACK_MODEL=gemma-4-26b-a4b-it`
 
 If no key is present, the app falls back to mock analysis.
+
+## Deploy Setup
+
+Vercel deploy is frontend-only. Set API base URL in Vercel project env vars:
+
+- `VITE_API_BASE_URL=https://your-backend-domain`
+
+Set same `GOOGLE_API_KEY` or `GEMINI_API_KEY` on backend host, not frontend. Frontend build uses `VITE_API_BASE_URL` for API calls and static image URLs.
 
 ## Test Data
 

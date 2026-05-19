@@ -4,6 +4,7 @@ import { motion } from 'framer-motion';
 import { useLanguage } from '../context/LanguageContext';
 import ListingDetailModal from '../components/ListingDetailModal';
 import { useSettings } from '../context/SettingsContext';
+import { buildStaticUrl } from '../utils/backendUrl';
 
 const MyListings = () => {
   const { t } = useLanguage();
@@ -68,7 +69,7 @@ const MyListings = () => {
             >
               <div className={`relative bg-surface-muted overflow-hidden shrink-0 ${viewMode === 'grid' ? 'aspect-square w-full' : 'w-40 md:w-48 h-full'}`}>
                 <img 
-                  src={`http://localhost:8000/static/images/${listing.image_url}`} 
+                  src={buildStaticUrl(`images/${listing.image_url}`)} 
                   alt={listing.title}
                   className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
                 />
