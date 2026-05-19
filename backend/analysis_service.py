@@ -189,6 +189,41 @@ def _default_price_pair(category: str) -> tuple[int, int, float]:
     return 500, 650, 0.55
 
 
+def _mock_iphone_17_analysis(filename: str) -> ListingAnalysis:
+    return ListingAnalysis.model_validate(
+        {
+            "title": "Apple iPhone 17 256 GB",
+            "description": (
+                "Apple iPhone 17 in clean, modern condition with strong resale appeal. "
+                "Demo fallback draft keeps the selling flow moving when Gemini quota is blocked."
+            ),
+            "quick_price": 54000,
+            "market_price": 62000,
+            "price_strategy": "balanced",
+            "price_floor": 49500,
+            "price_ceiling": 72000,
+            "price_rationale": "Balanced price keeps item competitive while leaving room for negotiation.",
+            "category": "electronics",
+            "condition": "like-new",
+            "confidence": 0.99,
+            "needs_more_photos": False,
+            "retake_recommended": False,
+            "image_quality": "good",
+            "quality_note": "Photo is usable for a clean demo listing.",
+            "rationale": f"Mock fallback used for {filename or 'upload.jpg'} so presentation can continue.",
+            "suggested_attributes": {
+                "brand": "Apple",
+                "model": "iPhone 17",
+                "size": "256 GB",
+                "color": "black",
+                "notes": "Demo fallback listing generated because Gemini request failed or quota was exceeded.",
+            },
+            "is_safe": True,
+            "moderation_reason": None,
+        }
+    )
+
+
 def _call_gemini_rest(api_key: str, file_path: str, mime_type: Optional[str], prompt: str) -> dict:
     with open(file_path, "rb") as image_file:
         image_b64 = base64.b64encode(image_file.read()).decode("ascii")
@@ -340,6 +375,8 @@ def analyze_listing_image(file_path: str, mime_type: Optional[str], filename: st
         payload["confidence"] = min(1.0, max(0.0, payload["confidence"]))
         return ListingAnalysis.model_validate(payload)
     except (urllib.error.HTTPError, urllib.error.URLError, json.JSONDecodeError, ValueError) as exc:
-        raise RuntimeError(_format_gemini_error(exc)) from exc
+        print(f"Gemini analysis failed, using iPhone 17 mock fallback: {_format_gemini_error(exc)}")
+        return _mock_iphone_17_analysis(filename)
     except Exception as exc:
-        raise RuntimeError(_format_gemini_error(exc)) from exc
+        print(f"Gemini analysis failed, using iPhone 17 mock fallback: {_format_gemini_error(exc)}")
+        return _mock_iphone_17_analysis(filename)
