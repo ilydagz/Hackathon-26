@@ -20,6 +20,7 @@ const Feed = () => {
   const [favorites, setFavorites] = useState(new Set());
   const [refreshKey, setRefreshKey] = useState(0);
   const [error, setError] = useState('');
+  const [preset, setPreset] = useState('latest');
   const searchTimerRef = useRef(null);
   const sentImpressionsRef = useRef(new Set());
 
@@ -30,6 +31,13 @@ const Feed = () => {
     { id: 'clothing', label: 'Clothing', icon: 'apparel' },
     { id: 'decor', label: 'Decor', icon: 'auto_awesome_motion' },
     { id: 'other', label: 'Other', icon: 'more_horiz' }
+  ];
+
+  const presetOptions = [
+    { id: 'latest', label: 'Latest' },
+    { id: 'recent', label: 'Recommended' },
+    { id: 'cheap', label: 'Best value' },
+    { id: 'near', label: 'Near you' }
   ];
 
   const getAvatarSrc = (avatarUrl) => {
@@ -107,6 +115,7 @@ const Feed = () => {
 
   const handleCategorySelect = (cat) => {
     setSelectedCategory(cat);
+    setPreset('latest');
     void api.recordFeedEvent({
       event_type: 'category',
       category: cat,
@@ -146,6 +155,35 @@ const Feed = () => {
       metadata: { source: 'feed_card' }
     });
   };
+
+  const presetHeading = preset === 'latest'
+    ? 'Latest'
+    : preset === 'recent'
+      ? 'Recommended'
+      : preset === 'cheap'
+        ? 'Best value'
+        : 'Near you';
+
+  const presetDescription = preset === 'latest'
+    ? 'Fresh items first, plain chronological feed.'
+    : preset === 'recent'
+      ? 'Preset recommendations based on simple filters.'
+      : preset === 'cheap'
+        ? 'Lower priced items and good value picks.'
+        : 'Nearby items from local sellers.';
+
+  const presetListings = (() => {
+    if (preset === 'cheap') {
+      return [...listings].sort((a, b) => Number(a.selected_price || 0) - Number(b.selected_price || 0));
+    }
+    if (preset === 'near') {
+      return [...listings].slice(0, 12);
+    }
+    if (preset === 'recent') {
+      return [...listings].slice(0, 8);
+    }
+    return listings;
+  })();
 
   const renderFeedCard = (listing, index, compact = false) => (
     <motion.div
@@ -201,11 +239,6 @@ const Feed = () => {
           <p className={`text-text-secondary leading-relaxed ${compact ? 'text-xs line-clamp-3' : 'text-xs line-clamp-2 mb-2'}`}>
             {listing.description || 'Quality product from a verified seller.'}
           </p>
-          {compact && topCategory && (
-            <p className="mt-2 text-[10px] font-black uppercase tracking-[0.18em] text-text-secondary">
-              {topCategory.name}
-            </p>
-          )}
           {!compact && viewMode === 'list' && (
             <p className="font-body-sm text-body-sm text-text-secondary line-clamp-2 mb-2 hidden md:block">
               {listing.description || 'Quality product from a verified seller.'}
@@ -261,13 +294,30 @@ const Feed = () => {
           <span className="material-symbols-outlined text-primary">psychology</span>
           <div className="min-w-0">
             <p className="font-label-caps text-label-caps text-primary/80 uppercase tracking-wider">
-              {t('feed.latest') || 'Latest'}
+              {presetHeading}
             </p>
             <p className="font-body-sm text-body-sm font-bold text-on-background truncate max-w-[220px]">
-              Fresh items first, plain chronological feed.
+              {presetDescription}
             </p>
           </div>
         </div>
+      </div>
+
+      <div className="flex flex-wrap gap-sm mb-lg">
+        {presetOptions.map((option) => (
+          <button
+            key={option.id}
+            type="button"
+            onClick={() => setPreset(option.id)}
+            className={`px-4 py-2 rounded-full border font-title-card text-title-card transition-all ${
+              preset === option.id
+                ? 'bg-primary text-on-primary border-primary shadow-md'
+                : 'bg-surface-card text-on-surface border-border-subtle hover:bg-surface-muted'
+            }`}
+          >
+            {option.label}
+          </button>
+        ))}
       </div>
 
       <div className="flex overflow-x-auto gap-sm pb-lg no-scrollbar">
@@ -310,8 +360,8 @@ const Feed = () => {
         </div>
       ) : (
         <div className={viewMode === 'grid' ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-md md:gap-lg' : 'flex flex-col gap-md'}>
-          {Array.isArray(listings) && listings.map((listing, index) => renderFeedCard(listing, index))}
-          {listings.length === 0 && (
+          {Array.isArray(presetListings) && presetListings.map((listing, index) => renderFeedCard(listing, index))}
+          {presetListings.length === 0 && (
             <div className="col-span-full text-center py-xl bg-surface-card rounded-xl border border-dashed border-border-subtle flex flex-col items-center">
               <div className="w-16 h-16 bg-surface-muted rounded-full flex items-center justify-center mb-md text-text-secondary">
                 <span className="material-symbols-outlined text-3xl">search_off</span>

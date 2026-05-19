@@ -161,6 +161,7 @@ export const translations = {
     'feed.filter': 'Filter',
     'feed.popular': 'Popular',
     'feed.forYou': 'For you',
+    'feed.latest': 'Latest',
     'feed.relevantFirst': 'Most relevant first',
     'feed.loading': 'Loading Items...',
     'feed.seller': 'Seller',
